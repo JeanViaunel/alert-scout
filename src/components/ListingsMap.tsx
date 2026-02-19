@@ -18,10 +18,14 @@ let DefaultIcon: L.Icon | null = null;
 let SelectedIcon: L.Icon | null = null;
 
 if (typeof window !== 'undefined') {
+  const iconUrl = typeof icon === "string" ? icon : icon.src;
+  const iconRetinaUrl = typeof iconRetina === "string" ? iconRetina : iconRetina.src;
+  const shadowUrl = typeof iconShadow === "string" ? iconShadow : iconShadow.src;
+
   DefaultIcon = L.icon({
-    iconUrl: icon.src || icon,
-    iconRetinaUrl: iconRetina.src || iconRetina,
-    shadowUrl: iconShadow.src || iconShadow,
+    iconUrl,
+    iconRetinaUrl,
+    shadowUrl,
     iconSize: [25, 41],
     iconAnchor: [12, 41],
     popupAnchor: [1, -34],  
@@ -30,9 +34,9 @@ if (typeof window !== 'undefined') {
   });
   
   SelectedIcon = L.icon({
-    iconUrl: icon.src || icon,
-    iconRetinaUrl: iconRetina.src || iconRetina,
-    shadowUrl: iconShadow.src || iconShadow,
+    iconUrl,
+    iconRetinaUrl,
+    shadowUrl,
     iconSize: [35, 57], // Larger for selected
     iconAnchor: [17, 57],
     popupAnchor: [1, -34],
@@ -153,12 +157,9 @@ export default function ListingsMap({ matches, selectedMatchId, onSelectMatch, c
                       maximumFractionDigits: 0,
                     }).format(match.price)}
                   </p>
-                  <a
-                    href={`/matches/${match.id}`}
-                    className="text-xs text-indigo-600 hover:underline mt-1 inline-block"
-                  >
-                    View details →
-                  </a>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Click marker or list item to focus this listing.
+                  </p>
                 </div>
               </Popup>
             </Marker>

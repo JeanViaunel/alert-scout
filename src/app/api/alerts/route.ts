@@ -3,6 +3,22 @@ import { getDb } from '@/lib/db';
 // Server-side auth helper - must import from auth-token-server, not auth-token
 import { getUserFromToken } from '@/lib/auth-token-server';
 
+function parseDate(s: string): string {
+  // If it already looks like ISO, keep it (Next/React handles it fine)
+  if (s.includes("T")) return s;
+  // SQLite CURRENT_TIMESTAMP: 'YYYY-MM-DD HH:MM:SS' (UTC, no TZ marker)
+  return new Date(s.replace(" ", "T") + "Z").toISOString();
+}
+
+function safeJsonParse<T>(value: unknown, fallback: T): T {
+  if (typeof value !== "string") return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 /**
  * Route Segment Config for API Routes
  * 
@@ -33,7 +49,7 @@ export async function GET(request: NextRequest) {
     }
 
     const db = getDb();
-    const alerts = db.prepare(`
+    const rows = db.prepare(`
       SELECT 
         a.*,
         COUNT(m.id) as match_count
@@ -43,6 +59,26 @@ export async function GET(request: NextRequest) {
       GROUP BY a.id
       ORDER BY a.created_at DESC
     `).all(user.id);
+
+    const alerts = (rows as any[]).map((row) => ({
+      id: row.id,
+      userId: row.user_id,
+      type: row.type,
+      name: row.name,
+      criteria: safeJsonParse<Record<string, unknown>>(row.criteria, {}),
+      sources: safeJsonParse<string[]>(row.sources, []),
+      isActive: Boolean(row.is_active),
+      checkFrequency: row.check_frequency,
+      lastChecked: row.last_checked ? parseDate(String(row.last_checked)) : undefined,
+      // Prefer stored last_match_count if present; otherwise fall back to joined count
+      lastMatchCount:
+        typeof row.last_match_count === "number"
+          ? row.last_match_count
+          : Number(row.match_count || 0),
+      createdAt: row.created_at ? parseDate(String(row.created_at)) : new Date().toISOString(),
+      notifyMethods: safeJsonParse<string[]>(row.notify_methods, ["app"]),
+      matchCount: Number(row.match_count || 0),
+    }));
 
     return NextResponse.json({ alerts });
   } catch (error) {
@@ -102,7 +138,19 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      alert: { id, type, name, is_active: 1 }
+      alert: {
+        id,
+        userId: user.id,
+        type,
+        name,
+        criteria,
+        sources,
+        isActive: true,
+        checkFrequency: checkFrequency || "1hour",
+        lastMatchCount: 0,
+        createdAt: new Date().toISOString(),
+        notifyMethods: notifyMethods || ["app"],
+      },
     }, { status: 201 });
   } catch (error) {
     console.error('Failed to create alert:', error);

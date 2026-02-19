@@ -60,6 +60,19 @@ function formatPrice(price: number, currency: string) {
   }).format(price);
 }
 
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function extractRoomsFromTitle(title: string): number | undefined {
   const roomMatch = title.match(/(\d+)房/);
   return roomMatch ? parseInt(roomMatch[1], 10) : undefined;
@@ -98,6 +111,45 @@ export default function MatchDetailPage() {
       .catch(() => setError("Match not found."))
       .finally(() => setIsLoading(false));
   }, [id]);
+
+  // On-demand enrichment for older 591 matches (details + full album).
+  useEffect(() => {
+    if (!match) return;
+    if (match.source !== "591") return;
+    const token = getAuthToken();
+    if (!token) return;
+
+    const md: any = match.metadata || {};
+    const hasRentDetail = !!md.rentDetail;
+    const photoList = Array.isArray(md.photoList) ? md.photoList : [];
+    const needsPhotos = photoList.length < 5;
+
+    if (hasRentDetail && !needsPhotos) return;
+
+    fetch(`/api/591/enrich?url=${encodeURIComponent(match.sourceUrl)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((data) => {
+        setMatch((prev) => {
+          if (!prev) return prev;
+          const prevMd: any = prev.metadata || {};
+          return {
+            ...prev,
+            metadata: {
+              ...prevMd,
+              ...(data.rentDetail ? { rentDetail: data.rentDetail } : {}),
+              ...(Array.isArray(data.photoList) && data.photoList.length > 0
+                ? { photoList: data.photoList }
+                : {}),
+            },
+          };
+        });
+      })
+      .catch(() => {
+        // Silent — enrichment is best-effort.
+      });
+  }, [match]);
 
   const toggleFavorite = () => {
     setIsFavorite((prev) => !prev);
@@ -148,6 +200,29 @@ export default function MatchDetailPage() {
   const layoutStr = metadata.layoutStr;
   const kindName = metadata.kind_name;
   const photoList = Array.isArray(metadata.photoList) ? metadata.photoList : [];
+  const rentDetail = metadata.rentDetail || {};
+  const rentTags = Array.isArray(rentDetail.tags) ? (rentDetail.tags as string[]) : [];
+  const depositText = typeof rentDetail.depositText === "string" ? rentDetail.depositText : "";
+  const infoByKey =
+    rentDetail.infoByKey && typeof rentDetail.infoByKey === "object"
+      ? (rentDetail.infoByKey as Record<string, string>)
+      : {};
+  const positionRound =
+    rentDetail.positionRound && typeof rentDetail.positionRound === "object"
+      ? (rentDetail.positionRound as any)
+      : null;
+  const service =
+    rentDetail.service && typeof rentDetail.service === "object"
+      ? (rentDetail.service as any)
+      : null;
+  const owner =
+    rentDetail.owner && typeof rentDetail.owner === "object"
+      ? (rentDetail.owner as any)
+      : null;
+  const remarkText =
+    typeof rentDetail.remarkHtml === "string"
+      ? htmlToPlainText(rentDetail.remarkHtml)
+      : "";
   const allImages =
     photoList.length > 0 ? photoList : match.imageUrl ? [match.imageUrl] : [];
 
@@ -162,6 +237,9 @@ export default function MatchDetailPage() {
     },
     layoutStr && { icon: Home, label: layoutStr },
     kindName && { icon: Building2, label: kindName },
+    depositText && { icon: Sparkles, label: depositText },
+    infoByKey.floor && { icon: Building2, label: infoByKey.floor },
+    infoByKey.shape && { icon: Building2, label: infoByKey.shape },
   ].filter(Boolean) as Array<{ icon: typeof Bed; label: string }>;
 
   return (
@@ -366,6 +444,205 @@ export default function MatchDetailPage() {
                       ))}
                     </div>
                   </Card>
+                </FadeIn>
+              )}
+
+              {/* 591 extras */}
+              {isProperty && (rentTags.length > 0 || positionRound || service || owner || remarkText) && (
+                <FadeIn delay={0.18}>
+                  <div className="space-y-6">
+                    {rentTags.length > 0 && (
+                      <Card className="p-6 bg-white/5 border-white/10">
+                        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-amber-500" />
+                          Highlights
+                        </h2>
+                        <div className="flex flex-wrap gap-2.5">
+                          {rentTags.map((t) => (
+                            <span
+                              key={t}
+                              className="inline-flex items-center px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-sm font-medium"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      </Card>
+                    )}
+
+                    {positionRound && (
+                      <Card className="p-6 bg-white/5 border-white/10">
+                        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-amber-500" />
+                          Nearby
+                        </h2>
+
+                        <div className="grid sm:grid-cols-2 gap-4 mb-5">
+                          <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                              所屬社區
+                            </p>
+                            <p className="text-slate-200 font-medium mt-1">
+                              {positionRound.communityName || "無"}
+                            </p>
+                          </div>
+                          <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                              地址 (概略)
+                            </p>
+                            <p className="text-slate-200 font-medium mt-1">
+                              {positionRound.address || match.location || "—"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-5">
+                          {Array.isArray(positionRound.data) &&
+                            positionRound.data.map((section: any) => {
+                              const title = typeof section?.name === "string" ? section.name : "";
+                              const children = Array.isArray(section?.children)
+                                ? section.children
+                                : [];
+                              if (!title || children.length === 0) return null;
+                              return (
+                                <div key={title} className="rounded-xl bg-white/5 border border-white/10 p-4">
+                                  <p className="text-sm font-semibold text-white mb-2">{title}</p>
+                                  <div className="space-y-2">
+                                    {children.map((c: any, idx: number) => {
+                                      const name = typeof c?.name === "string" ? c.name : "";
+                                      const distanceTxt =
+                                        typeof c?.distanceTxt === "string" ? c.distanceTxt : "";
+                                      const line = [name, distanceTxt].filter(Boolean).join(" · ");
+                                      if (!line) return null;
+                                      return (
+                                        <p key={`${title}-${idx}`} className="text-sm text-slate-300">
+                                          {line}
+                                        </p>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </Card>
+                    )}
+
+                    {service && (service.desc || service.rule || (Array.isArray(service.facilities) && service.facilities.length > 0)) && (
+                      <Card className="p-6 bg-white/5 border-white/10">
+                        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                          <Home className="h-4 w-4 text-amber-500" />
+                          租住資訊
+                        </h2>
+
+                        {(service.desc || service.rule) && (
+                          <div className="grid sm:grid-cols-2 gap-4 mb-5">
+                            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                租住說明
+                              </p>
+                              <p className="text-slate-200 font-medium mt-1">
+                                {service.desc || "—"}
+                              </p>
+                            </div>
+                            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                房屋守則
+                              </p>
+                              <p className="text-slate-200 font-medium mt-1">
+                                {service.rule || "—"}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {Array.isArray(service.facilities) && service.facilities.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                              提供設備
+                            </p>
+                            <div className="flex flex-wrap gap-2.5">
+                              {service.facilities.map((name: string) => (
+                                <span
+                                  key={name}
+                                  className="inline-flex items-center px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-sm font-medium"
+                                >
+                                  {name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </Card>
+                    )}
+
+                    {owner && (owner.name || owner.mobile || owner.phone || owner.roleTxt) && (
+                      <Card className="p-6 bg-white/5 border-white/10">
+                        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-amber-500" />
+                          屋主資訊
+                        </h2>
+
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                              屋主
+                            </p>
+                            <p className="text-slate-200 font-medium mt-1">
+                              {owner.name || "—"}
+                            </p>
+                            {owner.roleTxt && (
+                              <p className="text-slate-400 text-sm mt-1">{owner.roleTxt}</p>
+                            )}
+                          </div>
+                          <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                              聯絡
+                            </p>
+                            <p className="text-slate-200 font-medium mt-1">
+                              {owner.mobile || owner.phone || "—"}
+                            </p>
+                            {owner.line && (
+                              <a
+                                href={owner.line}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 text-amber-400 font-medium mt-2 hover:text-amber-300 transition-colors"
+                              >
+                                Line
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+
+                        {Array.isArray(owner.labels) && owner.labels.length > 0 && (
+                          <div className="mt-4 flex flex-wrap gap-2.5">
+                            {owner.labels.map((l: string) => (
+                              <span
+                                key={l}
+                                className="inline-flex items-center px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 text-sm"
+                              >
+                                {l}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </Card>
+                    )}
+
+                    {remarkText && (
+                      <Card className="p-6 bg-white/5 border-white/10">
+                        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                          <Home className="h-4 w-4 text-amber-500" />
+                          租住說明 (屋主說)
+                        </h2>
+                        <div className="whitespace-pre-wrap text-slate-200 text-sm leading-relaxed">
+                          {remarkText}
+                        </div>
+                      </Card>
+                    )}
+                  </div>
                 </FadeIn>
               )}
 

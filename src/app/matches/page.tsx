@@ -98,6 +98,13 @@ export default function MatchesPage() {
 
   const isMapView = viewMode === "map" && hasPropertyMatches;
 
+  // When entering map view, auto-select the first property match (if any)
+  useEffect(() => {
+    if (isMapView && propertyMatches.length > 0 && !selectedMatchId) {
+      setSelectedMatchId(propertyMatches[0].id);
+    }
+  }, [isMapView, propertyMatches, selectedMatchId]);
+
   return (
     <div className="min-h-screen bg-[#0a0f1a] flex flex-col">
       {/* Premium Header */}
@@ -229,10 +236,10 @@ export default function MatchesPage() {
             <StaggerContainer className="divide-y divide-white/5">
               {propertyMatches.map((match) => (
                 <StaggerItem key={match.id}>
-                  <motion.a
-                    href={`/matches/${match.id}`}
+                  <motion.button
+                    type="button"
                     onClick={() => setSelectedMatchId(match.id)}
-                    className={`flex gap-4 p-4 transition-all duration-300 cursor-pointer ${
+                    className={`flex w-full text-left gap-4 p-4 transition-all duration-300 cursor-pointer ${
                       selectedMatchId === match.id
                         ? "bg-amber-500/10 border-l-4 border-l-amber-500"
                         : "hover:bg-white/5 border-l-4 border-l-transparent"
@@ -284,7 +291,7 @@ export default function MatchesPage() {
                         </button>
                       </div>
                     </div>
-                  </motion.a>
+                  </motion.button>
                 </StaggerItem>
               ))}
             </StaggerContainer>
@@ -307,14 +314,20 @@ export default function MatchesPage() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             staggerDelay={0.08}
           >
-            {filteredMatches.map((match) => (
-              <StaggerItem key={match.id}>
-                <Card
-                  as="a"
-                  href={`/matches/${match.id}`}
-                  className="group overflow-hidden bg-white/5 border-white/10 hover:border-amber-500/30"
-                  glow
-                >
+            {filteredMatches.map((match) => {
+              const isSelected = selectedMatchId === match.id;
+              return (
+                <StaggerItem key={match.id}>
+                  <Card
+                    as="button"
+                    onClick={() => setSelectedMatchId(match.id)}
+                    className={`group overflow-hidden bg-white/5 border ${
+                      isSelected
+                        ? "border-amber-500/60 ring-2 ring-amber-500/40"
+                        : "border-white/10 hover:border-amber-500/30"
+                    }`}
+                    glow
+                  >
                   {/* Image */}
                   <div className="relative h-52 bg-white/5 overflow-hidden">
                     {match.imageUrl ? (
@@ -400,7 +413,8 @@ export default function MatchesPage() {
                   </div>
                 </Card>
               </StaggerItem>
-            ))}
+              );
+            })}
           </StaggerContainer>
         </main>
       )}
