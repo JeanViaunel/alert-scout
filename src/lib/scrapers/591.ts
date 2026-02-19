@@ -150,6 +150,7 @@ function parseNuxt591Listings(html: string): ScrapedListing[] {
     const roomMatch = title.match(/(\d+)房/);
     if (roomMatch) rooms = parseInt(roomMatch[1], 10);
     const imageUrl = Array.isArray(item.photoList) ? item.photoList[0] : undefined;
+    const photoList = Array.isArray(item.photoList) ? item.photoList : [];
 
     listings.push({
       id: `591-${id}`,
@@ -163,7 +164,15 @@ function parseNuxt591Listings(html: string): ScrapedListing[] {
       imageUrl,
       sourceUrl,
       source: '591',
-      metadata: { scrapedAt: new Date().toISOString() },
+      metadata: {
+        scrapedAt: new Date().toISOString(),
+        rooms,
+        areaText,
+        layoutStr: item.layoutStr,
+        kind_name: item.kind_name,
+        photoList,
+        rawId: id,
+      },
     });
   }
 

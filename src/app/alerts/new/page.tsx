@@ -8,10 +8,14 @@ import {
   Bell, Home, Loader2, ArrowLeft, Plus, X, Link as LinkIcon,
   ShoppingCart, ShoppingBag, Package, Globe, Monitor, Star,
   ChevronDown, ChevronUp, Play, CheckCircle, XCircle, ExternalLink,
+  Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import { getAuthToken } from '@/lib/auth-token';
 import type { Platform } from '@/types';
+import { Header } from '@/components/Header';
+import { Card } from '@/components/Card';
+import { FadeIn, ScaleIn } from '@/components/AnimatedContainer';
 
 // ---------------------------------------------------------------------------
 // Platform registry
@@ -34,9 +38,9 @@ const PLATFORMS: Record<Platform, PlatformDef> = {
     description: 'Taiwan property rental',
     type: 'property',
     currency: 'TWD',
-    textColor: 'text-blue-700',
-    borderColor: 'border-blue-500',
-    bgColor: 'bg-blue-50',
+    textColor: 'text-blue-400',
+    borderColor: 'border-blue-500/50',
+    bgColor: 'bg-blue-500/10',
     icon: Home,
   },
   'momo': {
@@ -44,9 +48,9 @@ const PLATFORMS: Record<Platform, PlatformDef> = {
     description: 'Taiwan ecommerce',
     type: 'product',
     currency: 'TWD',
-    textColor: 'text-red-700',
-    borderColor: 'border-red-500',
-    bgColor: 'bg-red-50',
+    textColor: 'text-rose-400',
+    borderColor: 'border-rose-500/50',
+    bgColor: 'bg-rose-500/10',
     icon: ShoppingCart,
   },
   'pchome': {
@@ -54,9 +58,9 @@ const PLATFORMS: Record<Platform, PlatformDef> = {
     description: 'Taiwan tech & electronics',
     type: 'product',
     currency: 'TWD',
-    textColor: 'text-orange-700',
-    borderColor: 'border-orange-500',
-    bgColor: 'bg-orange-50',
+    textColor: 'text-orange-400',
+    borderColor: 'border-orange-500/50',
+    bgColor: 'bg-orange-500/10',
     icon: Monitor,
   },
   'amazon': {
@@ -64,9 +68,9 @@ const PLATFORMS: Record<Platform, PlatformDef> = {
     description: 'Global ecommerce',
     type: 'product',
     currency: 'USD',
-    textColor: 'text-yellow-700',
-    borderColor: 'border-yellow-500',
-    bgColor: 'bg-yellow-50',
+    textColor: 'text-amber-400',
+    borderColor: 'border-amber-500/50',
+    bgColor: 'bg-amber-500/10',
     icon: Package,
   },
   'shopee': {
@@ -74,9 +78,9 @@ const PLATFORMS: Record<Platform, PlatformDef> = {
     description: 'Southeast Asia / Taiwan',
     type: 'product',
     currency: 'TWD',
-    textColor: 'text-orange-700',
-    borderColor: 'border-orange-400',
-    bgColor: 'bg-orange-50',
+    textColor: 'text-orange-400',
+    borderColor: 'border-orange-400/50',
+    bgColor: 'bg-orange-400/10',
     icon: ShoppingBag,
   },
   'custom': {
@@ -84,9 +88,9 @@ const PLATFORMS: Record<Platform, PlatformDef> = {
     description: 'Any website',
     type: 'product',
     currency: 'TWD',
-    textColor: 'text-slate-700',
-    borderColor: 'border-slate-400',
-    bgColor: 'bg-slate-50',
+    textColor: 'text-slate-300',
+    borderColor: 'border-slate-400/50',
+    bgColor: 'bg-slate-400/10',
     icon: Globe,
   },
 };
@@ -159,8 +163,8 @@ const FREQUENCIES = [
   { value: 'daily', label: 'Daily' },
 ];
 
-// Stable input styles so inline components don't remount on every keystroke
-const INPUT_CLS = 'w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none';
+// Premium dark input styles
+const INPUT_CLS = 'w-full px-4 py-3 rounded-xl border border-white/10 bg-slate-800/50 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all outline-none';
 const HALF_GRID = 'grid grid-cols-2 gap-4';
 
 // ---------------------------------------------------------------------------
@@ -301,7 +305,7 @@ function SuggestionChips({
   if (!suggestions.length) return null;
   return (
     <div className="mt-2">
-      {label && <p className="text-[11px] text-slate-400 mb-1.5 font-medium uppercase tracking-wide">{label}</p>}
+      {label && <p className="text-[11px] text-slate-500 mb-1.5 font-medium uppercase tracking-wide">{label}</p>}
       <div className="flex flex-wrap gap-1.5">
         {suggestions.map(s => {
           const added = addMode && existing.includes(s);
@@ -313,8 +317,8 @@ function SuggestionChips({
               onClick={() => !added && onSelect(s)}
               className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
                 added
-                  ? 'border-indigo-200 bg-indigo-50 text-indigo-400 cursor-default'
-                  : 'border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700'
+                  ? 'border-amber-500/30 bg-amber-500/10 text-amber-400 cursor-default'
+                  : 'border-white/10 text-slate-400 hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-300'
               }`}
             >
               {added ? `✓ ${s}` : `+ ${s}`}
@@ -348,11 +352,11 @@ function PriceRangeField({
   return (
     <div className={HALF_GRID}>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Min Price ({currency})</label>
+        <label className="block text-sm font-medium text-slate-300 mb-2">Min Price ({currency})</label>
         <input type="number" step={step} value={formData.minPrice} onChange={e => set({ minPrice: e.target.value })} placeholder={minPlaceholder} className={INPUT_CLS} />
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Max Price ({currency})</label>
+        <label className="block text-sm font-medium text-slate-300 mb-2">Max Price ({currency})</label>
         <input type="number" step={step} value={formData.maxPrice} onChange={e => set({ maxPrice: e.target.value })} placeholder={maxPlaceholder} className={INPUT_CLS} />
       </div>
     </div>
@@ -374,8 +378,8 @@ function KeywordsField({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-700 mb-2">
-        Keywords <span className="text-slate-400 font-normal">(optional)</span>
+      <label className="block text-sm font-medium text-slate-300 mb-2">
+        Keywords <span className="text-slate-500 font-normal">(optional)</span>
       </label>
       <div className="flex gap-2 mb-2">
         <input
@@ -386,7 +390,7 @@ function KeywordsField({
           placeholder="e.g., parking, balcony"
           className={`flex-1 ${INPUT_CLS}`}
         />
-        <button type="button" onClick={addKeyword} className="px-4 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors">
+        <button type="button" onClick={addKeyword} className="px-4 py-3 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 hover:text-white transition-colors border border-white/10">
           <Plus className="h-5 w-5" />
         </button>
       </div>
@@ -401,9 +405,9 @@ function KeywordsField({
       )}
       <div className="flex flex-wrap gap-2 mt-2">
         {formData.keywords.map(kw => (
-          <span key={kw} className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm">
+          <span key={kw} className="inline-flex items-center gap-1 px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full text-sm border border-amber-500/20">
             {kw}
-            <button type="button" onClick={() => removeKeyword(kw)} className="hover:text-indigo-900">
+            <button type="button" onClick={() => removeKeyword(kw)} className="hover:text-amber-100">
               <X className="h-3 w-3" />
             </button>
           </span>
@@ -436,14 +440,14 @@ function PlatformCriteriaForm({
     return (
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">City</label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">City</label>
           <select value={formData.city} onChange={e => set({ city: e.target.value, districts: [] })} className={INPUT_CLS}>
-            {CITIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            {CITIES.map(c => <option key={c.value} value={c.value} className="bg-slate-800 text-white">{c.label}</option>)}
           </select>
         </div>
         {DISTRICTS[formData.city] && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Districts <span className="text-slate-400 font-normal">(optional)</span></label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Districts <span className="text-slate-500 font-normal">(optional)</span></label>
             <div className="flex flex-wrap gap-2">
               {DISTRICTS[formData.city].map(d => (
                 <button
@@ -453,8 +457,10 @@ function PlatformCriteriaForm({
                     const sel = formData.districts.includes(d.value);
                     set({ districts: sel ? formData.districts.filter(x => x !== d.value) : [...formData.districts, d.value] });
                   }}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    formData.districts.includes(d.value) ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    formData.districts.includes(d.value) 
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/25' 
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-white/10'
                   }`}
                 >
                   {d.label}
@@ -465,32 +471,32 @@ function PlatformCriteriaForm({
         )}
         <div className={HALF_GRID}>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Min Price (TWD)</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Min Price (TWD)</label>
             <input type="number" value={formData.minPrice} onChange={e => set({ minPrice: e.target.value })} placeholder="5000" className={INPUT_CLS} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Max Price (TWD)</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Max Price (TWD)</label>
             <input type="number" value={formData.maxPrice} onChange={e => set({ maxPrice: e.target.value })} placeholder="50000" className={INPUT_CLS} />
           </div>
         </div>
         <div className={HALF_GRID}>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Min Area (ping)</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Min Area (ping)</label>
             <input type="number" step="0.1" value={formData.minPing} onChange={e => set({ minPing: e.target.value })} placeholder="10" className={INPUT_CLS} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Max Area (ping)</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Max Area (ping)</label>
             <input type="number" step="0.1" value={formData.maxPing} onChange={e => set({ maxPing: e.target.value })} placeholder="50" className={INPUT_CLS} />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Rooms</label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">Rooms</label>
           <select value={formData.rooms} onChange={e => set({ rooms: e.target.value })} className={INPUT_CLS}>
-            <option value="">Any</option>
-            <option value="1">1 Room</option>
-            <option value="2">2 Rooms</option>
-            <option value="3">3 Rooms</option>
-            <option value="4">4+ Rooms</option>
+            <option value="" className="bg-slate-800 text-white">Any</option>
+            <option value="1" className="bg-slate-800 text-white">1 Room</option>
+            <option value="2" className="bg-slate-800 text-white">2 Rooms</option>
+            <option value="3" className="bg-slate-800 text-white">3 Rooms</option>
+            <option value="4" className="bg-slate-800 text-white">4+ Rooms</option>
           </select>
         </div>
         <KeywordsField formData={formData} set={set} addKeyword={addKeyword} removeKeyword={removeKeyword} platform={p} />
@@ -502,7 +508,7 @@ function PlatformCriteriaForm({
     return (
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Search Keyword or ASIN <span className="text-slate-400 font-normal">(required)</span></label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">Search Keyword or ASIN <span className="text-slate-500 font-normal">(required)</span></label>
           <input
             type="text"
             value={formData.searchQuery || formData.asin}
@@ -514,47 +520,47 @@ function PlatformCriteriaForm({
             placeholder="e.g., noise cancelling headphones  or  B09X7CRKRZ"
             className={INPUT_CLS}
           />
-          {formData.asin && <p className="mt-1 text-xs text-green-600">ASIN detected: <span className="font-mono">{formData.asin}</span></p>}
+          {formData.asin && <p className="mt-1 text-xs text-emerald-400">ASIN detected: <span className="font-mono">{formData.asin}</span></p>}
         </div>
         <SuggestionChips label="Example searches" suggestions={SUGGESTIONS.amazon?.searchTerms || []} onSelect={v => set({ searchQuery: v, asin: '' })} />
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Department / Category <span className="text-slate-400 font-normal">(optional)</span></label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">Department / Category <span className="text-slate-500 font-normal">(optional)</span></label>
           <input type="text" value={formData.category} onChange={e => set({ category: e.target.value })} placeholder="e.g., Electronics, Books" className={INPUT_CLS} />
           <SuggestionChips label="Departments" suggestions={SUGGESTIONS.amazon?.categories || []} onSelect={v => set({ category: v })} />
         </div>
         <PriceRangeField formData={formData} set={set} currency={formData.currency} step="0.01" minPlaceholder="0" maxPlaceholder="999" />
         <div className={HALF_GRID}>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Condition</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Condition</label>
             <select value={formData.condition} onChange={e => set({ condition: e.target.value })} className={INPUT_CLS}>
-              <option value="any">Any</option>
-              <option value="new">New</option>
-              <option value="used">Used</option>
+              <option value="any" className="bg-slate-800 text-white">Any</option>
+              <option value="new" className="bg-slate-800 text-white">New</option>
+              <option value="used" className="bg-slate-800 text-white">Used</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Brand <span className="text-slate-400 font-normal">(optional)</span></label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Brand <span className="text-slate-500 font-normal">(optional)</span></label>
             <input type="text" value={formData.brand} onChange={e => set({ brand: e.target.value })} placeholder="e.g., Sony" className={INPUT_CLS} />
           </div>
         </div>
         <SuggestionChips label="Popular brands" suggestions={SUGGESTIONS.amazon?.brands || []} onSelect={v => set({ brand: v })} />
         <div className={HALF_GRID}>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Min Star Rating</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Min Star Rating</label>
             <div className="flex items-center gap-1 pt-1">
               {[1, 2, 3, 4, 5].map(n => (
-                <button key={n} type="button" onClick={() => set({ minRating: formData.minRating === String(n) ? '' : String(n) })} className={`p-1.5 rounded transition-colors ${parseInt(formData.minRating) >= n ? 'text-yellow-500' : 'text-slate-300 hover:text-yellow-300'}`}>
+                <button key={n} type="button" onClick={() => set({ minRating: formData.minRating === String(n) ? '' : String(n) })} className={`p-1.5 rounded transition-colors ${parseInt(formData.minRating) >= n ? 'text-amber-400' : 'text-slate-600 hover:text-amber-300'}`}>
                   <Star className="h-5 w-5 fill-current" />
                 </button>
               ))}
-              {formData.minRating && <span className="ml-1 text-sm text-slate-600">{formData.minRating}+</span>}
+              {formData.minRating && <span className="ml-1 text-sm text-slate-400">{formData.minRating}+</span>}
             </div>
           </div>
           <div className="flex items-center gap-3 pt-8">
-            <button type="button" onClick={() => set({ primeOnly: !formData.primeOnly })} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.primeOnly ? 'bg-indigo-600' : 'bg-slate-200'}`}>
+            <button type="button" onClick={() => set({ primeOnly: !formData.primeOnly })} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.primeOnly ? 'bg-amber-500' : 'bg-slate-700'}`}>
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.primeOnly ? 'translate-x-6' : 'translate-x-1'}`} />
             </button>
-            <label className="text-sm font-medium text-slate-700">Prime only</label>
+            <label className="text-sm font-medium text-slate-300">Prime only</label>
           </div>
         </div>
       </div>
@@ -565,34 +571,34 @@ function PlatformCriteriaForm({
     return (
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Search Keyword <span className="text-slate-400 font-normal">(required)</span></label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">Search Keyword <span className="text-slate-500 font-normal">(required)</span></label>
           <input type="text" value={formData.searchQuery} onChange={e => set({ searchQuery: e.target.value })} placeholder="e.g., 藍牙耳機, iPhone case" className={INPUT_CLS} />
           <SuggestionChips label="Example searches" suggestions={SUGGESTIONS.shopee?.searchTerms || []} onSelect={v => set({ searchQuery: v })} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Category <span className="text-slate-400 font-normal">(optional)</span></label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">Category <span className="text-slate-500 font-normal">(optional)</span></label>
           <input type="text" value={formData.category} onChange={e => set({ category: e.target.value })} placeholder="e.g., 手機/3C" className={INPUT_CLS} />
           <SuggestionChips label="Categories" suggestions={SUGGESTIONS.shopee?.categories || []} onSelect={v => set({ category: v })} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Brand <span className="text-slate-400 font-normal">(optional)</span></label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">Brand <span className="text-slate-500 font-normal">(optional)</span></label>
           <input type="text" value={formData.brand} onChange={e => set({ brand: e.target.value })} placeholder="e.g., Apple, Nike" className={INPUT_CLS} />
           <SuggestionChips label="Popular brands" suggestions={SUGGESTIONS.shopee?.brands || []} onSelect={v => set({ brand: v })} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Shop / Seller <span className="text-slate-400 font-normal">(optional)</span></label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">Shop / Seller <span className="text-slate-500 font-normal">(optional)</span></label>
           <input type="text" value={formData.shopName} onChange={e => set({ shopName: e.target.value })} placeholder="e.g., official brand store" className={INPUT_CLS} />
         </div>
         <PriceRangeField formData={formData} set={set} currency={formData.currency} />
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Min Star Rating</label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">Min Star Rating</label>
           <div className="flex items-center gap-1">
             {[1, 2, 3, 4, 5].map(n => (
-              <button key={n} type="button" onClick={() => set({ minRating: formData.minRating === String(n) ? '' : String(n) })} className={`p-1.5 rounded transition-colors ${parseInt(formData.minRating) >= n ? 'text-yellow-500' : 'text-slate-300 hover:text-yellow-300'}`}>
+              <button key={n} type="button" onClick={() => set({ minRating: formData.minRating === String(n) ? '' : String(n) })} className={`p-1.5 rounded transition-colors ${parseInt(formData.minRating) >= n ? 'text-amber-400' : 'text-slate-600 hover:text-amber-300'}`}>
                 <Star className="h-5 w-5 fill-current" />
               </button>
             ))}
-            {formData.minRating && <span className="ml-1 text-sm text-slate-600">{formData.minRating}+</span>}
+            {formData.minRating && <span className="ml-1 text-sm text-slate-400">{formData.minRating}+</span>}
           </div>
         </div>
       </div>
@@ -603,26 +609,26 @@ function PlatformCriteriaForm({
     return (
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Website URL <span className="text-slate-400 font-normal">(required — paste the search results page)</span></label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">Website URL <span className="text-slate-500 font-normal">(required — paste the search results page)</span></label>
           <input type="url" value={formData.url} onChange={e => set({ url: e.target.value })} placeholder="https://example.com/search?q=product" className={INPUT_CLS} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Search Keyword <span className="text-slate-400 font-normal">(optional)</span></label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">Search Keyword <span className="text-slate-500 font-normal">(optional)</span></label>
           <input type="text" value={formData.searchQuery} onChange={e => set({ searchQuery: e.target.value })} placeholder="e.g., iPhone 16" className={INPUT_CLS} />
         </div>
         <PriceRangeField formData={formData} set={set} />
         <KeywordsField formData={formData} set={set} addKeyword={addKeyword} removeKeyword={removeKeyword} platform={p} />
         <div>
-          <button type="button" onClick={() => setShowAdvanced(v => !v)} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 transition-colors">
+          <button type="button" onClick={() => setShowAdvanced(v => !v)} className="flex items-center gap-1 text-sm text-slate-400 hover:text-amber-400 transition-colors">
             {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             Advanced scraper hints
           </button>
           <AnimatePresence>
             {showAdvanced && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-3">
-                <label className="block text-sm font-medium text-slate-700 mb-2">CSS Selector <span className="text-slate-400 font-normal">(optional)</span></label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">CSS Selector <span className="text-slate-500 font-normal">(optional)</span></label>
                 <input type="text" value={formData.cssSelector} onChange={e => set({ cssSelector: e.target.value })} placeholder=".product-item, [data-type='result']" className={INPUT_CLS} spellCheck={false} />
-                <p className="mt-1 text-xs text-slate-400">Helps the scraper locate product listings on the page.</p>
+                <p className="mt-1 text-xs text-slate-500">Helps the scraper locate product listings on the page.</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -634,26 +640,26 @@ function PlatformCriteriaForm({
   return (
     <div className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Search Keyword <span className="text-slate-400 font-normal">(required)</span></label>
+        <label className="block text-sm font-medium text-slate-300 mb-2">Search Keyword <span className="text-slate-500 font-normal">(required)</span></label>
         <input type="text" value={formData.searchQuery} onChange={e => set({ searchQuery: e.target.value })} placeholder={p === 'momo' ? 'e.g., iPhone 16, Dyson 吸塵器' : 'e.g., RTX 4060, MacBook Air'} className={INPUT_CLS} />
         <SuggestionChips label="Example searches" suggestions={SUGGESTIONS[p]?.searchTerms || []} onSelect={v => set({ searchQuery: v })} />
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Category <span className="text-slate-400 font-normal">(optional)</span></label>
+        <label className="block text-sm font-medium text-slate-300 mb-2">Category <span className="text-slate-500 font-normal">(optional)</span></label>
         <input type="text" value={formData.category} onChange={e => set({ category: e.target.value })} placeholder={p === 'momo' ? 'e.g., 手機/相機' : 'e.g., 電腦/筆電'} className={INPUT_CLS} />
         <SuggestionChips label="Categories" suggestions={SUGGESTIONS[p]?.categories || []} onSelect={v => set({ category: v })} />
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Brand <span className="text-slate-400 font-normal">(optional)</span></label>
+        <label className="block text-sm font-medium text-slate-300 mb-2">Brand <span className="text-slate-500 font-normal">(optional)</span></label>
         <input type="text" value={formData.brand} onChange={e => set({ brand: e.target.value })} placeholder="e.g., Apple, Sony" className={INPUT_CLS} />
         <SuggestionChips label="Popular brands" suggestions={SUGGESTIONS[p]?.brands || []} onSelect={v => set({ brand: v })} />
       </div>
       <PriceRangeField formData={formData} set={set} currency={formData.currency} />
       <div className="flex items-center gap-3">
-        <button type="button" onClick={() => set({ inStockOnly: !formData.inStockOnly })} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.inStockOnly ? 'bg-indigo-600' : 'bg-slate-200'}`}>
+        <button type="button" onClick={() => set({ inStockOnly: !formData.inStockOnly })} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.inStockOnly ? 'bg-amber-500' : 'bg-slate-700'}`}>
           <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.inStockOnly ? 'translate-x-6' : 'translate-x-1'}`} />
         </button>
-        <label className="text-sm font-medium text-slate-700">In-stock only</label>
+        <label className="text-sm font-medium text-slate-300">In-stock only</label>
       </div>
     </div>
   );
@@ -671,6 +677,38 @@ type TestResult = {
   message?: string;
   error?: string;
 };
+
+// ---------------------------------------------------------------------------
+// StepIndicator component
+// ---------------------------------------------------------------------------
+
+function StepIndicator({ step, currentStep, label }: { step: number; currentStep: number; label: string }) {
+  const isActive = currentStep >= step;
+  const isCurrent = currentStep === step;
+  
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div
+        className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold text-sm transition-all duration-300 ${
+          isCurrent
+            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30'
+            : isActive
+            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+            : 'bg-slate-800 text-slate-500 border border-white/10'
+        }`}
+      >
+        {isActive && currentStep > step ? (
+          <CheckCircle className="h-5 w-5" />
+        ) : (
+          step
+        )}
+      </div>
+      <span className={`text-xs font-medium transition-colors ${isActive ? 'text-slate-300' : 'text-slate-500'}`}>
+        {label}
+      </span>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -959,8 +997,8 @@ export default function NewAlertPage() {
   const SummaryRow = ({ label, value }: { label: string; value?: string }) =>
     value ? (
       <div className="flex justify-between">
-        <dt className="text-slate-600">{label}:</dt>
-        <dd className="font-medium text-slate-900 text-right max-w-[60%] truncate">{value}</dd>
+        <dt className="text-slate-400">{label}:</dt>
+        <dd className="font-medium text-white text-right max-w-[60%] truncate">{value}</dd>
       </div>
     ) : null;
 
@@ -968,8 +1006,11 @@ export default function NewAlertPage() {
     const p = formData.platform;
     const pDef = p ? PLATFORMS[p] : null;
     return (
-      <div className="bg-indigo-50 p-4 rounded-xl">
-        <h3 className="font-semibold text-indigo-900 mb-2">Alert Summary</h3>
+      <div className="bg-gradient-to-r from-amber-500/10 to-amber-600/10 p-4 rounded-xl border border-amber-500/20">
+        <h3 className="font-semibold text-amber-400 mb-2 flex items-center gap-2">
+          <Sparkles className="h-4 w-4" />
+          Alert Summary
+        </h3>
         <dl className="space-y-1 text-sm">
           <SummaryRow label="Name" value={formData.name} />
           <SummaryRow label="Platform" value={pDef?.label} />
@@ -1000,343 +1041,364 @@ export default function NewAlertPage() {
   // -------------------------------------------------------------------------
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#0a0f1a]">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+      <Header />
+
+      {/* Sub Header with Back Button */}
+      <div className="border-b border-white/5 bg-[#0a0f1a]/80 backdrop-blur-xl sticky top-16 z-40">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Link href="/" className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                <ArrowLeft className="h-5 w-5 text-slate-600" />
-              </Link>
-              <div className="flex items-center gap-2">
-                <Bell className="h-6 w-6 text-indigo-600" />
-                <span className="text-xl font-bold text-slate-900">Alert Scout</span>
-              </div>
+          <div className="flex items-center gap-4 h-14">
+            <Link 
+              href="/alerts" 
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="text-sm font-medium">Back to Alerts</span>
+            </Link>
+            <div className="flex-1" />
+            <div className="flex items-center gap-2 text-slate-400">
+              <Bell className="h-4 w-4 text-amber-500" />
+              <span className="text-sm">Create New Alert</span>
             </div>
-            <div className="text-sm text-slate-600">Create New Alert</div>
           </div>
         </div>
-      </header>
+      </div>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8"
-        >
-          {/* Progress */}
-          <div className="mb-8">
-            <div className="flex items-center gap-4">
-              {[1, 2, 3].map((s, i) => (
-                <div key={s} className="contents">
-                  <div
-                    className={`flex items-center justify-center w-8 h-8 rounded-full font-medium text-sm ${
-                      step >= s ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'
-                    }`}
-                  >
-                    {s}
-                  </div>
-                  {i < 2 && <div className={`flex-1 h-1 ${step > s ? 'bg-indigo-600' : 'bg-slate-200'}`} />}
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between mt-2 text-sm text-slate-600">
-              <span>Platform & Name</span>
-              <span>Search Criteria</span>
-              <span>Schedule</span>
-            </div>
-          </div>
-
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm"
-            >
-              {error}
-            </motion.div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            {/* ----------------------------------------------------------------
-                Step 1 — Platform & Name
-            ---------------------------------------------------------------- */}
-            {step === 1 && (
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Paste a URL <span className="text-slate-400 font-normal">(optional — auto-detects platform)</span>
-                  </label>
-                  <div className="relative">
-                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <input
-                      type="url"
-                      value={formData.url}
-                      onChange={e => handleUrlChange(e.target.value)}
-                      placeholder="https://www.momoshop.com.tw/search/..."
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+        <FadeIn>
+          <Card className="p-6 sm:p-8" glow>
+            {/* Premium Progress */}
+            <div className="mb-10">
+              <div className="flex items-center justify-between">
+                {[1, 2, 3].map((s, i) => (
+                  <div key={s} className="flex items-center flex-1">
+                    <StepIndicator 
+                      step={s} 
+                      currentStep={step} 
+                      label={s === 1 ? 'Platform' : s === 2 ? 'Criteria' : 'Schedule'} 
                     />
+                    {i < 2 && (
+                      <div className="flex-1 h-px mx-4 relative">
+                        <div className={`absolute inset-0 transition-all duration-500 ${step > s ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-white/10'}`} />
+                      </div>
+                    )}
                   </div>
-                </div>
+                ))}
+              </div>
+            </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-3">Select Platform</label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {PLATFORM_ORDER.map(pid => {
-                      const def = PLATFORMS[pid];
-                      const Icon = def.icon;
-                      const selected = formData.platform === pid;
-                      return (
-                        <button
-                          key={pid}
-                          type="button"
-                          onClick={() => handlePlatformSelect(pid)}
-                          className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 text-center ${
-                            selected
-                              ? `${def.borderColor} ${def.bgColor} ${def.textColor}`
-                              : 'border-slate-200 hover:border-slate-300 text-slate-600'
-                          }`}
-                        >
-                          <Icon className="h-5 w-5" />
-                          <span className="text-xs font-semibold leading-tight">{def.label}</span>
-                          <span className="text-[10px] text-slate-400 leading-tight">{def.description}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+            {error && (
+              <ScaleIn>
+                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm">
+                  {error}
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Alert Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={e => set({ name: e.target.value })}
-                    required
-                    placeholder={
-                      formData.platform === '591'
-                        ? 'e.g., Hsinchu 2BR Apartment'
-                        : formData.platform
-                          ? `e.g., ${PLATFORMS[formData.platform].label}: iPhone 16`
-                          : 'e.g., My price alert'
-                    }
-                    className={INPUT_CLS}
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  disabled={!step1Valid}
-                  className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Continue
-                </button>
-              </motion.div>
+              </ScaleIn>
             )}
 
-            {/* ----------------------------------------------------------------
-                Step 2 — Criteria (dynamic per platform)
-            ---------------------------------------------------------------- */}
-            {step === 2 && (
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-                {/* Platform badge */}
-                {formData.platform && (() => {
-                  const def = PLATFORMS[formData.platform];
-                  const Icon = def.icon;
-                  return (
-                    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${def.bgColor} ${def.textColor} w-fit`}>
-                      <Icon className="h-4 w-4" />
-                      <span className="text-sm font-medium">{def.label}</span>
+            <form onSubmit={handleSubmit}>
+              {/* ----------------------------------------------------------------
+                  Step 1 — Platform & Name
+              ---------------------------------------------------------------- */}
+              {step === 1 && (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+                  {/* URL Input */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Paste a URL <span className="text-slate-500 font-normal">(optional — auto-detects platform)</span>
+                    </label>
+                    <div className="relative">
+                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                      <input
+                        type="url"
+                        value={formData.url}
+                        onChange={e => handleUrlChange(e.target.value)}
+                        placeholder="https://www.momoshop.com.tw/search/..."
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-white/10 bg-slate-800/50 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all outline-none"
+                      />
                     </div>
-                  );
-                })()}
-
-                <PlatformCriteriaForm {...platformFormProps} />
-
-                {/* ---- Test Check ---- */}
-                <div className="rounded-xl border border-dashed border-slate-300 p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h4 className="font-medium text-slate-800 text-sm">Test this search</h4>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Verify your settings before saving the alert
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={runTestCheck}
-                      disabled={testState === 'loading' || !canTest}
-                      className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-medium hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      {testState === 'loading' ? (
-                        <><Loader2 className="h-4 w-4 animate-spin" /> Checking...</>
-                      ) : (
-                        <><Play className="h-4 w-4" /> Run Test</>
-                      )}
-                    </button>
                   </div>
 
-                  {/* Test results */}
-                  <AnimatePresence>
-                    {testState === 'done' && testResult && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-4 pt-4 border-t border-slate-200"
-                      >
-                        {/* Status line */}
-                        <div className={`flex items-center gap-2 text-sm font-medium mb-3 ${testResult.success ? 'text-green-700' : 'text-red-600'}`}>
-                          {testResult.success
-                            ? <CheckCircle className="h-4 w-4 shrink-0" />
-                            : <XCircle className="h-4 w-4 shrink-0" />
-                          }
-                          <span>
-                            {formData.platform === '591'
-                              ? testResult.success
-                                ? `Found ${testResult.found} listing${testResult.found !== 1 ? 's' : ''} matching your criteria`
-                                : testResult.error
-                              : testResult.success
-                                ? testResult.message || 'Platform is reachable'
-                                : testResult.error
-                            }
-                          </span>
-                        </div>
+                  {/* Platform Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-3">Select Platform</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {PLATFORM_ORDER.map(pid => {
+                        const def = PLATFORMS[pid];
+                        const Icon = def.icon;
+                        const selected = formData.platform === pid;
+                        return (
+                          <button
+                            key={pid}
+                            type="button"
+                            onClick={() => handlePlatformSelect(pid)}
+                            className={`group p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 text-center hover:scale-[1.02] ${
+                              selected
+                                ? `${def.borderColor} ${def.bgColor} ${def.textColor} shadow-lg`
+                                : 'border-white/10 bg-slate-800/30 text-slate-400 hover:border-white/20 hover:bg-slate-800/50'
+                            }`}
+                          >
+                            <div className={`p-2 rounded-lg ${selected ? 'bg-white/10' : 'bg-white/5 group-hover:bg-white/10'} transition-colors`}>
+                              <Icon className="h-5 w-5" />
+                            </div>
+                            <span className="text-xs font-semibold leading-tight">{def.label}</span>
+                            <span className="text-[10px] text-slate-500 leading-tight">{def.description}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                        {/* 591 result cards */}
-                        {formData.platform === '591' && (testResult.items?.length ?? 0) > 0 && (
-                          <div className="grid gap-2">
-                            {(testResult.items ?? []).map((item, i) => (
-                              <a
-                                key={i}
-                                href={item.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors group"
-                              >
-                                {item.image ? (
-                                  <img src={item.image} alt="" className="w-10 h-10 rounded object-cover shrink-0" />
-                                ) : (
-                                  <div className="w-10 h-10 rounded bg-slate-200 flex items-center justify-center shrink-0">
-                                    <Home className="h-5 w-5 text-slate-400" />
-                                  </div>
-                                )}
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-medium text-slate-800 truncate">{item.title}</p>
-                                  <p className="text-xs text-slate-500">{item.price} · {item.location}</p>
-                                </div>
-                                <ExternalLink className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 shrink-0" />
-                              </a>
-                            ))}
-                          </div>
-                        )}
+                  {/* Alert Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Alert Name</label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={e => set({ name: e.target.value })}
+                      required
+                      placeholder={
+                        formData.platform === '591'
+                          ? 'e.g., Hsinchu 2BR Apartment'
+                          : formData.platform
+                            ? `e.g., ${PLATFORMS[formData.platform].label}: iPhone 16`
+                            : 'e.g., My price alert'
+                      }
+                      className={INPUT_CLS}
+                    />
+                  </div>
 
-                        {/* 591 no results */}
-                        {formData.platform === '591' && testResult.success && testResult.found === 0 && (
-                          <p className="text-xs text-amber-700 bg-amber-50 rounded-lg p-2.5">
-                            No listings found. Try broadening your criteria (wider price range, different city or fewer filters).
-                          </p>
-                        )}
-
-                        {/* Non-591: show search URL */}
-                        {formData.platform !== '591' && testResult.searchUrl && (
-                          <div className="text-xs">
-                            <p className="text-slate-500 mb-1">URL that will be monitored:</p>
-                            <a
-                              href={testResult.searchUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 break-all"
-                            >
-                              {testResult.searchUrl.length > 80 ? testResult.searchUrl.slice(0, 77) + '…' : testResult.searchUrl}
-                              <ExternalLink className="h-3 w-3 shrink-0 ml-0.5" />
-                            </a>
-                          </div>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <div className="flex gap-4 pt-2">
-                  <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 border border-slate-300 text-slate-700 rounded-xl font-semibold hover:bg-slate-50 transition-colors">
-                    Back
-                  </button>
+                  {/* Continue Button */}
                   <button
                     type="button"
-                    onClick={() => setStep(3)}
-                    disabled={!step2Valid}
-                    className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => setStep(2)}
+                    disabled={!step1Valid}
+                    className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3.5 rounded-xl font-semibold hover:from-amber-400 hover:to-amber-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40"
                   >
                     Continue
                   </button>
-                </div>
-              </motion.div>
-            )}
+                </motion.div>
+              )}
 
-            {/* ----------------------------------------------------------------
-                Step 3 — Schedule
-            ---------------------------------------------------------------- */}
-            {step === 3 && (
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Check Frequency</label>
-                  <div className="space-y-2">
-                    {FREQUENCIES.map(freq => (
-                      <button
-                        key={freq.value}
-                        type="button"
-                        onClick={() => set({ checkFrequency: freq.value })}
-                        className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                          formData.checkFrequency === freq.value
-                            ? 'border-indigo-600 bg-indigo-50'
-                            : 'border-slate-200 hover:border-slate-300'
-                        }`}
-                      >
-                        <div className="font-medium text-slate-900">{freq.label}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {formData.platform && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Data Source</label>
-                    <div className="p-4 bg-slate-50 rounded-xl flex items-center gap-3">
-                      <div className="w-5 h-5 rounded border-2 border-indigo-600 bg-indigo-600 flex items-center justify-center flex-shrink-0">
-                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
+              {/* ----------------------------------------------------------------
+                  Step 2 — Criteria (dynamic per platform)
+              ---------------------------------------------------------------- */}
+              {step === 2 && (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+                  {/* Platform badge */}
+                  {formData.platform && (() => {
+                    const def = PLATFORMS[formData.platform];
+                    const Icon = def.icon;
+                    return (
+                      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${def.bgColor} ${def.textColor} border ${def.borderColor}`}>
+                        <Icon className="h-4 w-4" />
+                        <span className="text-sm font-medium">{def.label}</span>
                       </div>
-                      <span className="font-medium text-slate-700">{PLATFORMS[formData.platform].label}</span>
+                    );
+                  })()}
+
+                  <PlatformCriteriaForm {...platformFormProps} />
+
+                  {/* ---- Test Check ---- */}
+                  <div className="rounded-xl border border-dashed border-white/10 bg-slate-800/30 p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h4 className="font-medium text-white text-sm flex items-center gap-2">
+                          <Play className="h-4 w-4 text-amber-500" />
+                          Test this search
+                        </h4>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Verify your settings before saving the alert
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={runTestCheck}
+                        disabled={testState === 'loading' || !canTest}
+                        className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-700 text-white text-sm font-medium hover:bg-slate-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed border border-white/10"
+                      >
+                        {testState === 'loading' ? (
+                          <><Loader2 className="h-4 w-4 animate-spin" /> Checking...</>
+                        ) : (
+                          <><Play className="h-4 w-4" /> Run Test</>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Test results */}
+                    <AnimatePresence>
+                      {testState === 'done' && testResult && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-4 pt-4 border-t border-white/10"
+                        >
+                          {/* Status line */}
+                          <div className={`flex items-center gap-2 text-sm font-medium mb-3 ${testResult.success ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {testResult.success
+                              ? <CheckCircle className="h-4 w-4 shrink-0" />
+                              : <XCircle className="h-4 w-4 shrink-0" />
+                            }
+                            <span>
+                              {formData.platform === '591'
+                                ? testResult.success
+                                  ? `Found ${testResult.found} listing${testResult.found !== 1 ? 's' : ''} matching your criteria`
+                                  : testResult.error
+                                : testResult.success
+                                  ? testResult.message || 'Platform is reachable'
+                                  : testResult.error
+                              }
+                            </span>
+                          </div>
+
+                          {/* 591 result cards */}
+                          {formData.platform === '591' && (testResult.items?.length ?? 0) > 0 && (
+                            <div className="grid gap-2">
+                              {(testResult.items ?? []).map((item, i) => (
+                                <a
+                                  key={i}
+                                  href={item.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-3 p-3 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors group border border-white/5"
+                                >
+                                  {item.image ? (
+                                    <img src={item.image} alt="" className="w-10 h-10 rounded object-cover shrink-0" />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded bg-slate-700 flex items-center justify-center shrink-0">
+                                      <Home className="h-5 w-5 text-slate-500" />
+                                    </div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-medium text-slate-200 truncate">{item.title}</p>
+                                    <p className="text-xs text-slate-500">{item.price} · {item.location}</p>
+                                  </div>
+                                  <ExternalLink className="h-3.5 w-3.5 text-slate-500 group-hover:text-amber-400 shrink-0 transition-colors" />
+                                </a>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* 591 no results */}
+                          {formData.platform === '591' && testResult.success && testResult.found === 0 && (
+                            <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+                              No listings found. Try broadening your criteria (wider price range, different city or fewer filters).
+                            </p>
+                          )}
+
+                          {/* Non-591: show search URL */}
+                          {formData.platform !== '591' && testResult.searchUrl && (
+                            <div className="text-xs">
+                              <p className="text-slate-500 mb-1">URL that will be monitored:</p>
+                              <a
+                                href={testResult.searchUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-amber-400 hover:text-amber-300 break-all"
+                              >
+                                {testResult.searchUrl.length > 80 ? testResult.searchUrl.slice(0, 77) + '…' : testResult.searchUrl}
+                                <ExternalLink className="h-3 w-3 shrink-0 ml-0.5" />
+                              </a>
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Navigation Buttons */}
+                  <div className="flex gap-4 pt-2">
+                    <button 
+                      type="button" 
+                      onClick={() => setStep(1)} 
+                      className="flex-1 py-3.5 border border-white/10 text-slate-300 rounded-xl font-semibold hover:bg-white/5 hover:text-white transition-all"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStep(3)}
+                      disabled={!step2Valid}
+                      className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3.5 rounded-xl font-semibold hover:from-amber-400 hover:to-amber-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40"
+                    >
+                      Continue
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ----------------------------------------------------------------
+                  Step 3 — Schedule
+              ---------------------------------------------------------------- */}
+              {step === 3 && (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+                  {/* Check Frequency */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-3">Check Frequency</label>
+                    <div className="grid gap-2">
+                      {FREQUENCIES.map(freq => (
+                        <button
+                          key={freq.value}
+                          type="button"
+                          onClick={() => set({ checkFrequency: freq.value })}
+                          className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                            formData.checkFrequency === freq.value
+                              ? 'border-amber-500/50 bg-amber-500/10'
+                              : 'border-white/10 hover:border-white/20 bg-slate-800/30'
+                          }`}
+                        >
+                          <div className={`font-medium ${formData.checkFrequency === freq.value ? 'text-amber-400' : 'text-slate-300'}`}>
+                            {freq.label}
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
-                )}
 
-                <AlertSummary />
+                  {/* Data Source */}
+                  {formData.platform && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Data Source</label>
+                      <div className="p-4 bg-slate-800/30 rounded-xl flex items-center gap-3 border border-white/10">
+                        <div className="w-5 h-5 rounded border-2 border-amber-500 bg-amber-500 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <span className="font-medium text-slate-300">{PLATFORMS[formData.platform].label}</span>
+                      </div>
+                    </div>
+                  )}
 
-                <div className="flex gap-4">
-                  <button type="button" onClick={() => setStep(2)} className="flex-1 py-3 border border-slate-300 text-slate-700 rounded-xl font-semibold hover:bg-slate-50 transition-colors">
-                    Back
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {isLoading ? (
-                      <><Loader2 className="h-5 w-5 animate-spin" /> Creating...</>
-                    ) : (
-                      'Create Alert'
-                    )}
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </form>
-        </motion.div>
+                  <AlertSummary />
+
+                  {/* Navigation Buttons */}
+                  <div className="flex gap-4">
+                    <button 
+                      type="button" 
+                      onClick={() => setStep(2)} 
+                      className="flex-1 py-3.5 border border-white/10 text-slate-300 rounded-xl font-semibold hover:bg-white/5 hover:text-white transition-all"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3.5 rounded-xl font-semibold hover:from-amber-400 hover:to-amber-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40"
+                    >
+                      {isLoading ? (
+                        <><Loader2 className="h-5 w-5 animate-spin" /> Creating...</>
+                      ) : (
+                        'Create Alert'
+                      )}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </form>
+          </Card>
+        </FadeIn>
       </main>
     </div>
   );
