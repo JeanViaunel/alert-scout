@@ -182,9 +182,7 @@ export default function MatchesPage() {
             {filteredMatches.map((match, index) => (
               <motion.a
                 key={match.id}
-                href={match.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={`/matches/${match.id}`}
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.03 }}
@@ -248,9 +246,7 @@ export default function MatchesPage() {
             {filteredMatches.map((match, index) => (
               <motion.a
                 key={match.id}
-                href={match.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={`/matches/${match.id}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}

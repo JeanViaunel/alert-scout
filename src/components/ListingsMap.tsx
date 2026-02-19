@@ -154,12 +154,10 @@ export default function ListingsMap({ matches, selectedMatchId, onSelectMatch, c
                     }).format(match.price)}
                   </p>
                   <a
-                    href={match.sourceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={`/matches/${match.id}`}
                     className="text-xs text-indigo-600 hover:underline mt-1 inline-block"
                   >
-                    View on {match.source} →
+                    View details →
                   </a>
                 </div>
               </Popup>

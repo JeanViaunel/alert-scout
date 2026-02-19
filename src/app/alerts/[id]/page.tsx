@@ -481,68 +481,54 @@ export default function AlertDetailPage() {
               {matches.slice(0, 12).map((match, i) => {
                 const isSelected = match.id === selectedMatchId;
                 return (
-                  <motion.div
+                  <motion.a
                     key={match.id}
                     id={`match-${match.id}`}
+                    href={`/matches/${match.id}`}
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.25 + i * 0.04 }}
-                    className={`bg-white rounded-xl border overflow-hidden hover:shadow-md transition-all group cursor-pointer ${
+                    className={`block bg-white rounded-xl border overflow-hidden hover:shadow-md transition-all group cursor-pointer ${
                       isSelected
                         ? 'border-indigo-500 ring-2 ring-indigo-200'
                         : 'border-slate-200 hover:border-indigo-200'
                     }`}
-                    onClick={() => {
-                      setSelectedMatchId(match.id);
-                      // Scroll map to this marker if map is visible
-                      if (alert.type === 'property') {
-                        const mapElement = document.querySelector('[class*="leaflet-container"]');
-                        if (mapElement) {
-                          mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }
-                      }
-                    }}
+                    onClick={() => setSelectedMatchId(match.id)}
                   >
-                  {/* Image */}
-                  <div className="h-36 bg-slate-100 flex items-center justify-center overflow-hidden">
-                    {match.imageUrl ? (
-                      <img src={match.imageUrl} alt={match.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <Home className="h-10 w-10 text-slate-300" />
-                    )}
-                  </div>
-
-                  <div className="p-3">
-                    <p className="text-sm font-semibold text-slate-900 line-clamp-2 mb-1">{match.title}</p>
-
-                    {match.location && (
-                      <p className="text-xs text-slate-500 flex items-center gap-1 mb-1.5">
-                        <MapPin className="h-3 w-3 shrink-0" /> {match.location}
-                      </p>
-                    )}
-
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-base font-bold text-indigo-600">
-                        {formatPrice(match.price, match.currency)}
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        {new Date(match.createdAt).toLocaleDateString()}
-                      </span>
+                    {/* Image */}
+                    <div className="h-36 bg-slate-100 flex items-center justify-center overflow-hidden">
+                      {match.imageUrl ? (
+                        <img src={match.imageUrl} alt={match.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <Home className="h-10 w-10 text-slate-300" />
+                      )}
                     </div>
-                    
-                    <div className="mt-2 pt-2 border-t border-slate-100">
-                      <a
-                        href={match.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1"
-                      >
-                        View on {match.source} <ExternalLink className="h-3 w-3" />
-                      </a>
+
+                    <div className="p-3">
+                      <p className="text-sm font-semibold text-slate-900 line-clamp-2 mb-1">{match.title}</p>
+
+                      {match.location && (
+                        <p className="text-xs text-slate-500 flex items-center gap-1 mb-1.5">
+                          <MapPin className="h-3 w-3 shrink-0" /> {match.location}
+                        </p>
+                      )}
+
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-base font-bold text-indigo-600">
+                          {formatPrice(match.price, match.currency)}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {new Date(match.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      <div className="mt-2 pt-2 border-t border-slate-100">
+                        <span className="text-xs text-indigo-600 font-medium flex items-center gap-1">
+                          View details <ExternalLink className="h-3 w-3" />
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
+                  </motion.a>
               );
             })}
             </div>
