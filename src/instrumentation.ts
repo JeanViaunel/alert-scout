@@ -29,5 +29,11 @@ export async function register() {
       region: process.env.VERCEL_REGION,
       url: process.env.VERCEL_URL,
     });
+
+    // Start the alert scheduler on server boot so alerts run on their
+    // configured frequency (5min / 15min / 1hour / daily) without needing
+    // an HTTP request to /api/queue to initialise it first.
+    const { scheduleAlertChecks } = await import('./lib/queue');
+    scheduleAlertChecks();
   }
 }

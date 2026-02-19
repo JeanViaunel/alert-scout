@@ -37,14 +37,62 @@ function isDue(alert: Alert): boolean {
 // DB helpers
 // ---------------------------------------------------------------------------
 
-function listingExists(alertId: string, sourceUrl: string): boolean {
-  const db = getDb();
-  return !!db.prepare('SELECT 1 FROM matches WHERE alert_id = ? AND source_url = ?').get(alertId, sourceUrl);
+interface KnownListing {
+  matchId: string;
+  price: number;
+  currency: string;
 }
 
-async function saveMatch(alertId: string, listing: ScrapedListing | ScrapedProduct, latitude?: number | null, longitude?: number | null): Promise<void> {
+/** Return the most-recent price record for this source URL + alert, or null if unseen. */
+function getLastKnownPrice(alertId: string, sourceUrl: string): KnownListing | null {
+  const db = getDb();
+  const row = db.prepare(`
+    SELECT ph.match_id, ph.price, ph.currency
+    FROM price_history ph
+    WHERE ph.alert_id = ? AND ph.source_url = ?
+    ORDER BY ph.scraped_at DESC
+    LIMIT 1
+  `).get(alertId, sourceUrl) as any;
+  if (!row) return null;
+  return { matchId: row.match_id, price: row.price, currency: row.currency };
+}
+
+function recordPriceHistory(matchId: string, sourceUrl: string, alertId: string, price: number, currency: string): void {
   const db = getDb();
   const { randomUUID } = require('crypto');
+  db.prepare(`
+    INSERT INTO price_history (id, match_id, source_url, alert_id, price, currency)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(randomUUID(), matchId, sourceUrl, alertId, price, currency);
+}
+
+function updateMatchPrice(matchId: string, price: number): void {
+  const db = getDb();
+  db.prepare('UPDATE matches SET price = ? WHERE id = ?').run(price, matchId);
+}
+
+function createPriceDropNotification(userId: string, alertId: string, matchId: string, title: string, oldPrice: number, newPrice: number, currency: string): void {
+  const db = getDb();
+  const { randomUUID } = require('crypto');
+  const drop = oldPrice - newPrice;
+  const pct = Math.round((drop / oldPrice) * 100);
+  db.prepare(`
+    INSERT INTO notifications (id, user_id, alert_id, type, title, message, data)
+    VALUES (?, ?, ?, 'price_drop', ?, ?, ?)
+  `).run(
+    randomUUID(),
+    userId,
+    alertId,
+    `Price dropped on "${title}"`,
+    `Price fell from ${oldPrice} to ${newPrice} ${currency} (−${pct}%)`,
+    JSON.stringify({ matchId, oldPrice, newPrice, currency }),
+  );
+}
+
+async function saveMatch(alertId: string, listing: ScrapedListing | ScrapedProduct, latitude?: number | null, longitude?: number | null): Promise<string> {
+  const db = getDb();
+  const { randomUUID } = require('crypto');
+  const matchId = randomUUID();
   const loc = 'location' in listing ? listing.location : null;
   const area = 'area' in listing ? (listing.area ?? null) : null;
   const currency = (listing as ScrapedProduct).metadata?.currency ?? (listing.source === 'amazon' ? 'USD' : 'TWD');
@@ -52,7 +100,7 @@ async function saveMatch(alertId: string, listing: ScrapedListing | ScrapedProdu
     INSERT INTO matches (id, alert_id, title, price, currency, location, area, image_url, source_url, source, metadata, latitude, longitude)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    randomUUID(),
+    matchId,
     alertId,
     listing.title,
     listing.price,
@@ -66,11 +114,50 @@ async function saveMatch(alertId: string, listing: ScrapedListing | ScrapedProdu
     latitude ?? null,
     longitude ?? null,
   );
+  // Record initial price observation
+  recordPriceHistory(matchId, listing.sourceUrl, alertId, listing.price, currency);
+  return matchId;
 }
 
 // ---------------------------------------------------------------------------
 // Core: run one alert
 // ---------------------------------------------------------------------------
+
+/** Process a single scraped listing: new → save; price changed → update + history; unchanged → skip. */
+async function handleListing(
+  alert: Alert,
+  listing: ScrapedListing | ScrapedProduct,
+  latitude?: number | null,
+  longitude?: number | null,
+): Promise<boolean> {
+  const currency = (listing as ScrapedProduct).metadata?.currency ?? (listing.source === 'amazon' ? 'USD' : 'TWD');
+  const existing = getLastKnownPrice(alert.id, listing.sourceUrl);
+
+  if (!existing) {
+    // New listing — save and record initial price history
+    await saveMatch(alert.id, listing, latitude, longitude);
+    return true; // counts as new match
+  }
+
+  if (listing.price !== existing.price) {
+    // Price changed — update the match row and record history
+    updateMatchPrice(existing.matchId, listing.price);
+    recordPriceHistory(existing.matchId, listing.sourceUrl, alert.id, listing.price, currency);
+    if (listing.price < existing.price) {
+      createPriceDropNotification(
+        alert.userId,
+        alert.id,
+        existing.matchId,
+        listing.title,
+        existing.price,
+        listing.price,
+        currency,
+      );
+      console.log(`↓ Price drop on "${listing.title}": ${existing.price} → ${listing.price} ${currency}`);
+    }
+  }
+  return false; // not a new match
+}
 
 async function processAlertById(alertId: string): Promise<{ newMatches: number }> {
   const alert = getAlertById(alertId);
@@ -84,67 +171,51 @@ async function processAlertById(alertId: string): Promise<{ newMatches: number }
       const filtered  = filterListings(listings, alert.criteria as PropertyCriteria);
 
       for (const listing of filtered) {
-        if (!listingExists(alert.id, listing.sourceUrl)) {
-          // Geocode address for property listings
-          let latitude: number | null = null;
-          let longitude: number | null = null;
-          
-          if (listing.location) {
-            try {
-              const coords = await geocodeAddressWithRateLimit(listing.location);
-              if (coords) {
-                latitude = coords.latitude;
-                longitude = coords.longitude;
-              }
-            } catch (err) {
-              console.warn(`Geocoding failed for listing "${listing.title}" at "${listing.location}":`, err);
-              // Continue without coordinates - listing will still be saved
+        let latitude: number | null = null;
+        let longitude: number | null = null;
+        const existing = getLastKnownPrice(alert.id, listing.sourceUrl);
+
+        if (!existing && listing.location) {
+          try {
+            const coords = await geocodeAddressWithRateLimit(listing.location);
+            if (coords) {
+              latitude = coords.latitude;
+              longitude = coords.longitude;
             }
+          } catch (err) {
+            console.warn(`Geocoding failed for "${listing.title}" at "${listing.location}":`, err);
           }
-          
-          await saveMatch(alert.id, listing, latitude, longitude);
-          newMatches++;
         }
+
+        if (await handleListing(alert, listing, latitude, longitude)) newMatches++;
       }
     }
 
     if (alert.sources.includes('momo')) {
       const products = await scrapeMomo(alert.criteria as EcommerceCriteria);
       for (const p of products) {
-        if (!listingExists(alert.id, p.sourceUrl)) {
-          await saveMatch(alert.id, p, null, null);
-          newMatches++;
-        }
+        if (await handleListing(alert, p, null, null)) newMatches++;
       }
     }
 
     if (alert.sources.includes('pchome')) {
       const products = await scrapePChome(alert.criteria as EcommerceCriteria);
       for (const p of products) {
-        if (!listingExists(alert.id, p.sourceUrl)) {
-          await saveMatch(alert.id, p, null, null);
-          newMatches++;
-        }
+        if (await handleListing(alert, p, null, null)) newMatches++;
       }
     }
 
     if (alert.sources.includes('shopee')) {
       const products = await scrapeShopee(alert.criteria as EcommerceCriteria);
       for (const p of products) {
-        if (!listingExists(alert.id, p.sourceUrl)) {
-          await saveMatch(alert.id, p, null, null);
-          newMatches++;
-        }
+        if (await handleListing(alert, p, null, null)) newMatches++;
       }
     }
 
     if (alert.sources.includes('amazon')) {
       const products = await scrapeAmazon(alert.criteria as EcommerceCriteria);
       for (const p of products) {
-        if (!listingExists(alert.id, p.sourceUrl)) {
-          await saveMatch(alert.id, p, null, null);
-          newMatches++;
-        }
+        if (await handleListing(alert, p, null, null)) newMatches++;
       }
     }
   } catch (err) {

@@ -24,6 +24,9 @@ import {
   Activity,
   Calendar,
   RefreshCw,
+  TrendingDown,
+  TrendingUp,
+  BarChart2,
 } from "lucide-react";
 import Link from "next/link";
 import ListingsMap from "@/components/ListingsMap";
@@ -726,6 +729,88 @@ export default function AlertDetailPage() {
             )}
           </Card>
         </FadeIn>
+
+        {/* ---- Price Insights ---- */}
+        {matches.length > 0 && (() => {
+          const prices = matches.map((m) => m.price);
+          const minPrice = Math.min(...prices);
+          const maxPrice = Math.max(...prices);
+          const avgPrice = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
+          const currency = matches[0].currency || "TWD";
+          const cheapest = matches.find((m) => m.price === minPrice);
+          const spread = maxPrice - minPrice;
+          const spreadPct = minPrice > 0 ? Math.round((spread / minPrice) * 100) : 0;
+
+          return (
+            <FadeIn delay={0.4}>
+              <Card className="p-6">
+                <h2 className="text-sm font-semibold text-white mb-5 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                    <BarChart2 className="h-4 w-4 text-amber-400" />
+                  </div>
+                  Price Insights
+                  <span className="ml-auto text-xs text-slate-500 font-normal">
+                    across {matches.length} listing{matches.length !== 1 ? "s" : ""}
+                  </span>
+                </h2>
+
+                <div className="grid grid-cols-3 gap-4 mb-5">
+                  <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-center">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
+                      <TrendingDown className="h-3.5 w-3.5 text-emerald-400" /> Lowest
+                    </p>
+                    <p className="text-lg font-bold text-emerald-400">
+                      {formatPrice(minPrice, currency)}
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                      Average
+                    </p>
+                    <p className="text-lg font-bold text-amber-400">
+                      {formatPrice(avgPrice, currency)}
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-rose-500/5 border border-rose-500/20 text-center">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
+                      <TrendingUp className="h-3.5 w-3.5 text-rose-400" /> Highest
+                    </p>
+                    <p className="text-lg font-bold text-rose-400">
+                      {formatPrice(maxPrice, currency)}
+                    </p>
+                  </div>
+                </div>
+
+                {spread > 0 && (
+                  <p className="text-xs text-slate-500 mb-4">
+                    Price spread: <span className="text-slate-300 font-medium">{formatPrice(spread, currency)}</span>
+                    {" "}({spreadPct}% above cheapest)
+                  </p>
+                )}
+
+                {cheapest && (
+                  <a
+                    href={`/matches/${cheapest.id}`}
+                    className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 hover:bg-emerald-500/10 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0">
+                        <TrendingDown className="h-4 w-4 text-emerald-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-slate-500">Best deal found</p>
+                        <p className="text-sm text-white font-medium truncate">{cheapest.title}</p>
+                      </div>
+                    </div>
+                    <span className="text-emerald-400 font-bold text-sm shrink-0 ml-3 group-hover:text-emerald-300 transition-colors">
+                      {formatPrice(minPrice, currency)} →
+                    </span>
+                  </a>
+                )}
+              </Card>
+            </FadeIn>
+          );
+        })()}
       </main>
     </div>
   );

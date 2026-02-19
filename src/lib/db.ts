@@ -46,6 +46,22 @@ function runMigrations(database: Database.Database): void {
         console.log('Migration: Added longitude column to matches table');
       }
     }
+
+    // Ensure price_history table exists (idempotent)
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS price_history (
+        id TEXT PRIMARY KEY,
+        match_id TEXT NOT NULL,
+        source_url TEXT NOT NULL,
+        alert_id TEXT NOT NULL,
+        price INTEGER NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'TWD',
+        scraped_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
+      )
+    `);
+    database.exec(`CREATE INDEX IF NOT EXISTS idx_price_history_match_id ON price_history(match_id)`);
+    database.exec(`CREATE INDEX IF NOT EXISTS idx_price_history_source_url ON price_history(source_url, alert_id)`);
   } catch (err) {
     // Migration failed - log but don't throw
     console.warn('Migration check for matches table columns:', err instanceof Error ? err.message : err);
@@ -110,6 +126,22 @@ function initializeDatabase(database: Database.Database): void {
 
   // Run migrations for existing databases
   runMigrations(database);
+
+  // Price history table — one row per price observation per listing
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS price_history (
+      id TEXT PRIMARY KEY,
+      match_id TEXT NOT NULL,
+      source_url TEXT NOT NULL,
+      alert_id TEXT NOT NULL,
+      price INTEGER NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'TWD',
+      scraped_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
+    )
+  `);
+  database.exec(`CREATE INDEX IF NOT EXISTS idx_price_history_match_id ON price_history(match_id)`);
+  database.exec(`CREATE INDEX IF NOT EXISTS idx_price_history_source_url ON price_history(source_url, alert_id)`);
 
   // Notifications table
   database.exec(`
