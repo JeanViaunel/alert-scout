@@ -27,6 +27,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Redirect /dashboard to /
+  if (pathname === '/dashboard') {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
   // Security headers for all routes
   const response = NextResponse.next();
   
@@ -39,7 +44,7 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Cache-Control', 'private, no-cache, no-store, must-revalidate');
 
   // Check if the request is for a protected route
-  const protectedPaths = ['/dashboard', '/alerts', '/matches', '/profile'];
+  const protectedPaths = ['/alerts', '/matches', '/profile'];
   const isProtected = protectedPaths.some(path => pathname.startsWith(path));
   
   if (!isProtected) {

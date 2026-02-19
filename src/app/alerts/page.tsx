@@ -127,7 +127,7 @@ export default function AlertsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+              <Link href="/" className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
                 <ArrowLeft className="h-5 w-5 text-slate-600" />
               </Link>
               <div className="flex items-center gap-2">

@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       token,
     });
 
-    // Set cookie so middleware can authenticate navigation to /dashboard
+    // Set cookie so middleware can authenticate navigation
     response.cookies.set('auth-token', token, {
       path: '/',
       httpOnly: false, // so client can clear it on logout

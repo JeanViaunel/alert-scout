@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await response.json();
     localStorage.setItem('auth-token', data.token);
     setUser(data.user);
-    router.push('/dashboard');
+    router.push('/');
   };
 
   const register = async (data: RegisterData) => {
@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const result = await response.json();
     localStorage.setItem('auth-token', result.token);
     setUser(result.user);
-    router.push('/dashboard');
+    router.push('/');
   };
 
   const logout = () => {

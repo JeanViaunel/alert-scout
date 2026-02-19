@@ -58,6 +58,38 @@ export function getMatchesByAlert(alertId: string): Match[] {
   }));
 }
 
+export function getMatchById(matchId: string): (Match & { alertName?: string; alertType?: string; userId?: string }) | null {
+  const db = getDb();
+  const stmt = db.prepare(`
+    SELECT m.*, a.name as alert_name, a.type as alert_type, a.user_id
+    FROM matches m
+    JOIN alerts a ON m.alert_id = a.id
+    WHERE m.id = ?
+  `);
+  const row = stmt.get(matchId) as any;
+  if (!row) return null;
+  return {
+    id: row.id,
+    alertId: row.alert_id,
+    title: row.title,
+    price: row.price,
+    currency: row.currency,
+    location: row.location,
+    area: row.area,
+    imageUrl: row.image_url,
+    sourceUrl: row.source_url,
+    source: row.source,
+    metadata: JSON.parse(row.metadata || '{}'),
+    isFavorite: Boolean(row.is_favorite),
+    createdAt: new Date(row.created_at),
+    alertName: row.alert_name,
+    alertType: row.alert_type,
+    userId: row.user_id,
+    latitude: row.latitude ?? undefined,
+    longitude: row.longitude ?? undefined,
+  };
+}
+
 export function toggleFavorite(matchId: string, isFavorite: boolean): void {
   const db = getDb();
   const stmt = db.prepare('UPDATE matches SET is_favorite = ? WHERE id = ?');

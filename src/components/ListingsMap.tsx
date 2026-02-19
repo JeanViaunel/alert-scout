@@ -13,8 +13,12 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
 
+// Initialize default icon only on client side
+let DefaultIcon: L.Icon | null = null;
+let SelectedIcon: L.Icon | null = null;
+
 if (typeof window !== 'undefined') {
-  const DefaultIcon = L.icon({
+  DefaultIcon = L.icon({
     iconUrl: icon.src || icon,
     iconRetinaUrl: iconRetina.src || iconRetina,
     shadowUrl: iconShadow.src || iconShadow,
@@ -24,6 +28,18 @@ if (typeof window !== 'undefined') {
     tooltipAnchor: [16, -28],
     shadowSize: [41, 41],
   });
+  
+  SelectedIcon = L.icon({
+    iconUrl: icon.src || icon,
+    iconRetinaUrl: iconRetina.src || iconRetina,
+    shadowUrl: iconShadow.src || iconShadow,
+    iconSize: [35, 57], // Larger for selected
+    iconAnchor: [17, 57],
+    popupAnchor: [1, -34],
+    tooltipAnchor: [16, -28],
+    shadowSize: [41, 41],
+  });
+  
   L.Marker.prototype.options.icon = DefaultIcon;
 }
 
@@ -53,9 +69,10 @@ interface ListingsMapProps {
   matches: Match[];
   selectedMatchId: string | null;
   onSelectMatch: (matchId: string) => void;
+  className?: string;
 }
 
-export default function ListingsMap({ matches, selectedMatchId, onSelectMatch }: ListingsMapProps) {
+export default function ListingsMap({ matches, selectedMatchId, onSelectMatch, className }: ListingsMapProps) {
   const [isClient, setIsClient] = useState(false);
   
   useEffect(() => {
@@ -69,15 +86,15 @@ export default function ListingsMap({ matches, selectedMatchId, onSelectMatch }:
   
   if (!isClient) {
     return (
-      <div className="w-full h-[500px] bg-slate-100 rounded-xl flex items-center justify-center">
+      <div className={`w-full h-[500px] bg-slate-100 rounded-xl flex items-center justify-center ${className ?? ''}`}>
         <p className="text-slate-500">Loading map...</p>
       </div>
     );
   }
-  
+
   if (matchesWithCoords.length === 0) {
     return (
-      <div className="w-full h-[500px] bg-slate-100 rounded-xl flex items-center justify-center border border-slate-200">
+      <div className={`w-full h-[500px] bg-slate-100 rounded-xl flex items-center justify-center border border-slate-200 ${className ?? ''}`}>
         <div className="text-center">
           <p className="text-slate-600 font-medium">Map unavailable</p>
           <p className="text-slate-400 text-sm mt-1">No location data available for these listings</p>
@@ -85,12 +102,12 @@ export default function ListingsMap({ matches, selectedMatchId, onSelectMatch }:
       </div>
     );
   }
-  
+
   // Default center: Taiwan (roughly center of the island)
   const defaultCenter: [number, number] = [23.5, 121.0];
-  
+
   return (
-    <div className="w-full h-[500px] rounded-xl overflow-hidden border border-slate-200">
+    <div className={`w-full h-[500px] rounded-xl overflow-hidden border border-slate-200 ${className ?? ''}`}>
       <MapContainer
         center={defaultCenter}
         zoom={8}
@@ -106,24 +123,17 @@ export default function ListingsMap({ matches, selectedMatchId, onSelectMatch }:
         
         {matchesWithCoords.map(match => {
           const isSelected = match.id === selectedMatchId;
-          const markerIcon = isSelected
-            ? L.icon({
-                iconUrl: icon.src || icon,
-                iconRetinaUrl: iconRetina.src || iconRetina,
-                shadowUrl: iconShadow.src || iconShadow,
-                iconSize: [35, 57], // Larger for selected
-                iconAnchor: [17, 57],
-                popupAnchor: [1, -34],
-                tooltipAnchor: [16, -28],
-                shadowSize: [41, 41],
-              })
-            : undefined; // Use default icon for non-selected
+          // Only pass icon prop if we have a custom selected icon, otherwise use default from prototype
+          const markerProps: { icon?: L.Icon } = {};
+          if (isSelected && SelectedIcon) {
+            markerProps.icon = SelectedIcon;
+          }
           
           return (
             <Marker
               key={match.id}
               position={[match.latitude!, match.longitude!]}
-              icon={markerIcon}
+              {...markerProps}
               eventHandlers={{
                 click: () => {
                   onSelectMatch(match.id);
