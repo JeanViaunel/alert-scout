@@ -1,88 +1,114 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
-import { createAlert, getAlertsByUser } from '@/lib/alerts';
-import { runAlertNow } from '@/lib/queue';
-import { z } from 'zod';
+import { getDb } from '@/lib/db';
+// Server-side auth helper - must import from auth-token-server, not auth-token
+import { getUserFromToken } from '@/lib/auth-token-server';
 
+/**
+ * Route Segment Config for API Routes
+ * 
+ * - dynamic: 'force-dynamic' - Don't cache, always execute on server
+ * - runtime: 'nodejs' - Use Node.js runtime (required for better-sqlite3)
+ * - maxDuration: 60 - Maximum execution time in seconds
+ */
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
-const createAlertSchema = z.object({
-  type: z.enum(['property', 'product']),
-  name: z.string().min(1, 'Name is required'),
-  // Accept any criteria shape — property or ecommerce
-  criteria: z.record(z.string(), z.unknown()),
-  sources: z.array(z.string()).min(1, 'At least one source is required'),
-  checkFrequency: z.enum(['5min', '15min', '30min', '1hour', 'daily']).default('1hour'),
-  notifyMethods: z.array(z.enum(['app', 'email', 'whatsapp'])).default(['app']),
-});
+// Revalidate time for ISR (not applicable for force-dynamic, but good for documentation)
+export const revalidate = 0;
 
-export async function POST(request: NextRequest) {
+/**
+ * GET /api/alerts
+ * Get all alerts for the authenticated user
+ */
+export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const token = authHeader.substring(7);
-    const payload = verifyToken(token);
-
-    const body = await request.json();
-    const result = createAlertSchema.safeParse(body);
-    if (!result.success) {
+    const user = getUserFromToken(request);
+    
+    if (!user) {
       return NextResponse.json(
-        { error: 'Validation failed', details: result.error.flatten() },
-        { status: 400 },
+        { error: 'Unauthorized' },
+        { status: 401 }
       );
     }
 
-    const { type, name, criteria, sources, checkFrequency, notifyMethods } = result.data;
+    const db = getDb();
+    const alerts = db.prepare(`
+      SELECT 
+        a.*,
+        COUNT(m.id) as match_count
+      FROM alerts a
+      LEFT JOIN matches m ON a.id = m.alert_id
+      WHERE a.user_id = ?
+      GROUP BY a.id
+      ORDER BY a.created_at DESC
+    `).all(user.id);
 
-    const alert = createAlert(
-      payload.userId,
-      type,
-      name,
-      criteria as any,
-      sources,
-      checkFrequency,
-      notifyMethods,
-    );
-
-    // Run the alert immediately in the background — don't block the response.
-    // The cron will take over for subsequent runs at the configured frequency.
-    setImmediate(() => {
-      runAlertNow(alert.id).catch(err =>
-        console.error(`Initial run failed for alert "${alert.name}":`, err),
-      );
-    });
-
-    return NextResponse.json({ message: 'Alert created successfully', alert }, { status: 201 });
-  } catch (error: any) {
-    console.error('Create alert error:', error);
+    return NextResponse.json({ alerts });
+  } catch (error) {
+    console.error('Failed to fetch alerts:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 },
+      { error: 'Internal server error' },
+      { status: 500 }
     );
   }
 }
 
-export async function GET(request: NextRequest) {
+/**
+ * POST /api/alerts
+ * Create a new alert
+ */
+export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = getUserFromToken(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
-    const token = authHeader.substring(7);
-    const payload = verifyToken(token);
+    const body = await request.json();
+    const { type, name, criteria, sources, checkFrequency, notifyMethods } = body;
 
-    const alerts = getAlertsByUser(payload.userId);
+    // Validation
+    if (!type || !name || !criteria || !sources) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json({ alerts });
-  } catch (error: any) {
-    console.error('Get alerts error:', error);
+    const { v4: uuidv4 } = await import('uuid');
+    const id = uuidv4();
+
+    const db = getDb();
+    db.prepare(`
+      INSERT INTO alerts (
+        id, user_id, type, name, criteria, sources, 
+        check_frequency, notify_methods, is_active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+    `).run(
+      id,
+      user.id,
+      type,
+      name,
+      JSON.stringify(criteria),
+      JSON.stringify(sources),
+      checkFrequency || '1hour',
+      JSON.stringify(notifyMethods || ['app'])
+    );
+
+    return NextResponse.json({ 
+      success: true, 
+      alert: { id, type, name, is_active: 1 }
+    }, { status: 201 });
+  } catch (error) {
+    console.error('Failed to create alert:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 },
+      { error: 'Internal server error' },
+      { status: 500 }
     );
   }
 }

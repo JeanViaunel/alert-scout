@@ -10,7 +10,9 @@
     "db:init": "node -e \"require('./src/lib/db').initDb(); console.log('Database initialized')\""
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.39.0",
     "axios": "^1.13.5",
+    "babel-plugin-react-compiler": "^1.0.0",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.6.2",
     "cheerio": "^1.2.0",
