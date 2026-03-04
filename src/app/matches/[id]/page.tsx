@@ -881,7 +881,7 @@ export default function MatchDetailPage() {
                   <div>
                     <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-amber-500" />
-                      Location
+                      地址 (概略)
                     </h2>
                     <Card className="overflow-hidden bg-white/5 border-white/10 p-0">
                       <ListingsMap

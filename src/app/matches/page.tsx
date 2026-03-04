@@ -15,6 +15,10 @@ import {
   Map,
   Grid,
   Sparkles,
+  TrendingDown,
+  Car,
+  BadgePercent,
+  Check,
 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -314,20 +318,14 @@ export default function MatchesPage() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             staggerDelay={0.08}
           >
-            {filteredMatches.map((match) => {
-              const isSelected = selectedMatchId === match.id;
-              return (
-                <StaggerItem key={match.id}>
-                  <Card
-                    as="button"
-                    onClick={() => setSelectedMatchId(match.id)}
-                    className={`group overflow-hidden bg-white/5 border ${
-                      isSelected
-                        ? "border-amber-500/60 ring-2 ring-amber-500/40"
-                        : "border-white/10 hover:border-amber-500/30"
-                    }`}
-                    glow
-                  >
+            {filteredMatches.map((match) => (
+              <StaggerItem key={match.id}>
+                <Card
+                  as="a"
+                  href={`/matches/${match.id}`}
+                  className="group overflow-hidden bg-white/5 border border-white/10 hover:border-amber-500/30"
+                  glow
+                >
                   {/* Image */}
                   <div className="relative h-52 bg-white/5 overflow-hidden">
                     {match.imageUrl ? (
@@ -371,9 +369,17 @@ export default function MatchesPage() {
 
                   {/* Content */}
                   <div className="p-5">
-                    <h3 className="font-semibold text-white mb-2 line-clamp-2 group-hover:text-amber-400 transition-colors">
-                      {match.title}
-                    </h3>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-white line-clamp-2 group-hover:text-amber-400 transition-colors">
+                        {match.title}
+                      </h3>
+                      {match.isPriceDropped && (
+                        <span className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+                          <TrendingDown className="h-3 w-3" />
+                          DROP
+                        </span>
+                      )}
+                    </div>
 
                     {match.location && (
                       <div className="flex items-center gap-1.5 text-slate-400 text-sm mb-3">
@@ -382,21 +388,46 @@ export default function MatchesPage() {
                       </div>
                     )}
 
-                    <div className="flex items-baseline gap-2 mb-4">
-                      <span className="text-2xl font-bold text-amber-400">
-                        {formatPrice(match.price, match.currency)}
-                      </span>
-                      {PROPERTY_SOURCES.includes(match.source) && (
-                        <span className="text-slate-500 text-sm">/month</span>
+                    <div className="flex items-baseline justify-between mb-4">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-amber-400">
+                          {formatPrice(match.price, match.currency)}
+                        </span>
+                        {match.oldPrice && (
+                          <span className="text-slate-500 text-sm line-through">
+                            {formatPrice(match.oldPrice, match.currency)}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {match.capRate && (
+                        <div className="flex flex-col items-end">
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Cap Rate</span>
+                          <span className="text-sm font-bold text-emerald-400">{match.capRate}%</span>
+                        </div>
                       )}
                     </div>
 
-                    {match.area && (
-                      <div className="flex items-center gap-1.5 text-sm text-slate-400 mb-4">
-                        <Home className="h-4 w-4 text-amber-500/70" />
-                        {match.area} ping
-                      </div>
-                    )}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      {match.area && (
+                        <div className="flex items-center gap-1.5 text-sm text-slate-400">
+                          <Home className="h-4 w-4 text-amber-500/70" />
+                          {match.area} ping
+                        </div>
+                      )}
+                      {match.commuteTime && (
+                        <div className="flex items-center gap-1.5 text-sm text-slate-400">
+                          <Car className="h-4 w-4 text-amber-500/70" />
+                          {match.commuteTime} min
+                        </div>
+                      )}
+                      {match.hasAc && (
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                          <Check className="h-3 w-3 text-emerald-500" />
+                          AC Included
+                        </div>
+                      )}
+                    </div>
 
                     <div className="flex items-center justify-between pt-4 border-t border-white/10">
                       <div className="flex items-center gap-1.5 text-sm text-slate-500">
@@ -413,8 +444,7 @@ export default function MatchesPage() {
                   </div>
                 </Card>
               </StaggerItem>
-              );
-            })}
+            ))}
           </StaggerContainer>
         </main>
       )}

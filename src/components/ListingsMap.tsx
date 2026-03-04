@@ -16,6 +16,7 @@ import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
 // Initialize default icon only on client side
 let DefaultIcon: L.Icon | null = null;
 let SelectedIcon: L.Icon | null = null;
+let DroppedIcon: L.Icon | null = null;
 
 if (typeof window !== 'undefined') {
   const iconUrl = typeof icon === "string" ? icon : icon.src;
@@ -42,6 +43,7 @@ if (typeof window !== 'undefined') {
     popupAnchor: [1, -34],
     tooltipAnchor: [16, -28],
     shadowSize: [41, 41],
+    className: 'selected-marker'
   });
   
   L.Marker.prototype.options.icon = DefaultIcon;
@@ -62,6 +64,10 @@ const Marker = dynamic(
 );
 const Popup = dynamic(
   () => import('react-leaflet').then(mod => mod.Popup),
+  { ssr: false }
+);
+const MarkerClusterGroup = dynamic(
+  () => import('react-leaflet-cluster'),
   { ssr: false }
 );
 const MapBoundsUpdater = dynamic(
@@ -90,7 +96,7 @@ export default function ListingsMap({ matches, selectedMatchId, onSelectMatch, c
   
   if (!isClient) {
     return (
-      <div className={`w-full h-[500px] bg-slate-100 rounded-xl flex items-center justify-center ${className ?? ''}`}>
+      <div className={`w-full h-[500px] bg-slate-900 rounded-xl flex items-center justify-center ${className ?? ''}`}>
         <p className="text-slate-500">Loading map...</p>
       </div>
     );
@@ -98,10 +104,10 @@ export default function ListingsMap({ matches, selectedMatchId, onSelectMatch, c
 
   if (matchesWithCoords.length === 0) {
     return (
-      <div className={`w-full h-[500px] bg-slate-100 rounded-xl flex items-center justify-center border border-slate-200 ${className ?? ''}`}>
+      <div className={`w-full h-[500px] bg-slate-900 rounded-xl flex items-center justify-center border border-white/10 ${className ?? ''}`}>
         <div className="text-center">
-          <p className="text-slate-600 font-medium">Map unavailable</p>
-          <p className="text-slate-400 text-sm mt-1">No location data available for these listings</p>
+          <p className="text-slate-400 font-medium">Map unavailable</p>
+          <p className="text-slate-500 text-sm mt-1">No location data available for these listings</p>
         </div>
       </div>
     );
@@ -111,61 +117,91 @@ export default function ListingsMap({ matches, selectedMatchId, onSelectMatch, c
   const defaultCenter: [number, number] = [23.5, 121.0];
 
   return (
-    <div className={`w-full h-[500px] rounded-xl overflow-hidden border border-slate-200 ${className ?? ''}`}>
+    <div className={`w-full h-[500px] rounded-xl overflow-hidden border border-white/10 ${className ?? ''}`}>
       <MapContainer
         center={defaultCenter}
         zoom={8}
-        style={{ height: '100%', width: '100%' }}
+        style={{ height: '100%', width: '100%', background: '#0a0f1a' }}
         scrollWheelZoom={true}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
         
         <MapBoundsUpdater matches={matchesWithCoords} selectedMatchId={selectedMatchId} />
         
-        {matchesWithCoords.map(match => {
-          const isSelected = match.id === selectedMatchId;
-          // Only pass icon prop if we have a custom selected icon, otherwise use default from prototype
-          const markerProps: { icon?: L.Icon } = {};
-          if (isSelected && SelectedIcon) {
-            markerProps.icon = SelectedIcon;
-          }
-          
-          return (
-            <Marker
-              key={match.id}
-              position={[match.latitude!, match.longitude!]}
-              {...markerProps}
-              eventHandlers={{
-                click: () => {
-                  onSelectMatch(match.id);
-                },
-              }}
-            >
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-semibold text-sm mb-1 line-clamp-2">{match.title}</h3>
-                  {match.location && (
-                    <p className="text-xs text-slate-600 mb-1">{match.location}</p>
-                  )}
-                  <p className="text-sm font-bold text-indigo-600">
-                    {new Intl.NumberFormat('en-US', {
-                      style: 'currency',
-                      currency: match.currency || 'TWD',
-                      maximumFractionDigits: 0,
-                    }).format(match.price)}
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    Click marker or list item to focus this listing.
-                  </p>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
+        <MarkerClusterGroup
+          chunkedLoading
+          maxClusterRadius={40}
+          showCoverageOnHover={false}
+          spiderfyOnMaxZoom={true}
+        >
+          {matchesWithCoords.map(match => {
+            const isSelected = match.id === selectedMatchId;
+            const markerProps: { icon?: L.Icon } = {};
+            if (isSelected && SelectedIcon) {
+              markerProps.icon = SelectedIcon;
+            }
+            
+            return (
+              <Marker
+                key={match.id}
+                position={[match.latitude!, match.longitude!]}
+                {...markerProps}
+                eventHandlers={{
+                  click: () => {
+                    onSelectMatch(match.id);
+                  },
+                }}
+              >
+                <Popup className="premium-popup">
+                  <div className="p-1">
+                    <div className="flex items-center justify-between mb-1 gap-4">
+                      <h3 className="font-bold text-sm text-slate-900 leading-tight">{match.title}</h3>
+                      {match.isPriceDropped && (
+                        <span className="bg-emerald-100 text-emerald-700 text-[9px] font-bold px-1.5 rounded uppercase">Drop</span>
+                      )}
+                    </div>
+                    {match.location && (
+                      <p className="text-[11px] text-slate-600 mb-2 line-clamp-1">{match.location}</p>
+                    )}
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-bold text-indigo-600">
+                        NT${match.price.toLocaleString()}
+                      </p>
+                      {match.area && (
+                        <span className="text-[10px] text-slate-500">{match.area} ping</span>
+                      )}
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+        </MarkerClusterGroup>
       </MapContainer>
+      
+      <style jsx global>{`
+        .leaflet-container {
+          background: #0a0f1a !important;
+        }
+        .premium-popup .leaflet-popup-content-wrapper {
+          border-radius: 12px;
+          padding: 4px;
+        }
+        .selected-marker {
+          filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+        }
+        .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
+          background-color: rgba(251, 191, 36, 0.6) !important;
+        }
+        .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div {
+          background-color: rgba(251, 191, 36, 0.9) !important;
+          color: white !important;
+          font-weight: bold;
+        }
+      `}</style>
     </div>
   );
 }

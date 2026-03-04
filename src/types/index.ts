@@ -86,6 +86,15 @@ export interface Match {
   createdAt: Date;
   latitude?: number;
   longitude?: number;
+  // v2 Fields
+  isPriceDropped?: boolean;
+  oldPrice?: number;
+  roi?: number;
+  capRate?: number;
+  commuteTime?: number;
+  imageQualityScore?: number;
+  hasAc?: boolean;
+  hasFurniture?: boolean;
 }
 
 export interface Notification {

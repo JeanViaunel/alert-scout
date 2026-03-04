@@ -21,9 +21,9 @@ export interface MarketReport {
     avgPrice: number;
     avgPriceChange: number;
     avgPriceChangePercent: number;
-    avgPing: number;
-    avgPricePerPing: number;
-    pricePerPingChange: number;
+    avgArea: number;
+    avgPricePerArea: number;
+    pricePerAreaChange: number;
   };
   priceDistribution: {
     under15k: number;
@@ -77,8 +77,8 @@ export function generateMarketReport(
     SELECT 
       COUNT(*) as total_listings,
       AVG(price) as avg_price,
-      AVG(CASE WHEN ping > 0 THEN price / ping ELSE NULL END) as avg_price_per_ping,
-      AVG(ping) as avg_ping,
+      AVG(CASE WHEN area > 0 THEN price / area ELSE NULL END) as avg_price_per_area,
+      AVG(area) as avg_area,
       COUNT(CASE WHEN created_at > ? THEN 1 END) as new_this_week
     FROM matches
     WHERE source = '591'
@@ -87,34 +87,33 @@ export function generateMarketReport(
   `).get(weekAgo.toISOString(), `%${city}%`, fourWeeksAgo.toISOString()) as {
     total_listings: number;
     avg_price: number;
-    avg_price_per_ping: number;
-    avg_ping: number;
+    avg_price_per_area: number;
+    avg_area: number;
     new_this_week: number;
   };
   
   // Get previous week stats for comparison
   const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
   const previousStats = db.prepare(`
-    SELECT 
-      AVG(price) as avg_price,
-      AVG(CASE WHEN ping > 0 THEN price / ping ELSE NULL END) as avg_price_per_ping
-    FROM matches
-    WHERE source = '591'
-      AND location LIKE ?
-      AND created_at BETWEEN ? AND ?
+  SELECT 
+    AVG(price) as avg_price,
+    AVG(CASE WHEN area > 0 THEN price / area ELSE NULL END) as avg_price_per_area
+  FROM matches
+  WHERE source = '591'
+    AND location LIKE ?
+    AND created_at BETWEEN ? AND ?
   `).get(`%${city}%`, twoWeeksAgo.toISOString(), weekAgo.toISOString()) as {
-    avg_price: number;
-    avg_price_per_ping: number;
-  } | undefined;
-  
+  avg_price: number;
+  avg_price_per_area: number;
+  } | undefined;  
   const avgPrice = currentStats.avg_price || 0;
   const prevAvgPrice = previousStats?.avg_price || 0;
   const avgPriceChange = avgPrice - prevAvgPrice;
   const avgPriceChangePercent = prevAvgPrice > 0 ? (avgPriceChange / prevAvgPrice) * 100 : 0;
   
-  const pricePerPing = currentStats.avg_price_per_ping || 0;
-  const prevPricePerPing = previousStats?.avg_price_per_ping || 0;
-  const pricePerPingChange = pricePerPing - prevPricePerPing;
+  const pricePerArea = currentStats.avg_price_per_area || 0;
+  const prevPricePerArea = previousStats?.avg_price_per_area || 0;
+  const pricePerAreaChange = pricePerArea - prevPricePerArea;
   
   // Price distribution
   const distribution = db.prepare(`
@@ -233,9 +232,9 @@ export function generateMarketReport(
       avgPrice: Math.round(avgPrice),
       avgPriceChange: Math.round(avgPriceChange),
       avgPriceChangePercent: parseFloat(avgPriceChangePercent.toFixed(1)),
-      avgPing: parseFloat((currentStats.avg_ping || 0).toFixed(1)),
-      avgPricePerPing: Math.round(pricePerPing),
-      pricePerPingChange: Math.round(pricePerPingChange),
+      avgArea: parseFloat((currentStats.avg_area || 0).toFixed(1)),
+      avgPricePerArea: Math.round(pricePerArea),
+      pricePerAreaChange: Math.round(pricePerAreaChange),
     },
     priceDistribution: {
       under15k: distribution.under15k,
@@ -281,7 +280,7 @@ export function formatWhatsAppReport(report: MarketReport): string {
 Total Active Listings: ${report.metrics.totalListings.toLocaleString()}
 New This Week: +${report.metrics.newThisWeek} (${report.metrics.newThisWeekPercent.toFixed(0)}%)
 Average Rent: NT$${report.metrics.avgPrice.toLocaleString()}/mo (${trendArrow}NT$${Math.abs(report.metrics.avgPriceChange).toLocaleString()})
-Avg Price per Ping: NT$${report.metrics.avgPricePerPing.toLocaleString()} (${trendArrow}NT$${Math.abs(report.metrics.pricePerPingChange)})
+Avg Price per Area: NT$${report.metrics.avgPricePerArea.toLocaleString()} (${trendArrow}NT$${Math.abs(report.metrics.pricePerAreaChange)})
 
 📈 Price Trend (4 weeks)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -311,7 +310,9 @@ Trend: ${trendArrow} ${trendDirection} (${report.metrics.avgPriceChangePercent >
 `;
 
   report.hotKeywords.forEach((keyword, i) => {
-    message += `\n#${keyword.replace(/\s+/g, '-')}`;
+    if (typeof keyword === 'string') {
+      message += `\n#${keyword.replace(/\s+/g, '-')}`;
+    }
   });
 
   message += `
