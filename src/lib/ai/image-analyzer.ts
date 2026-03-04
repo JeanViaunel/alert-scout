@@ -5,7 +5,7 @@ export interface ImageAnalysis {
   imageUrl: string;
   features: {
     hasFurniture: boolean;
-    hasAC: boolean;
+    hasAc: boolean;
     hasWasher: boolean;
     hasKitchen: boolean;
     hasBalcony: boolean;
@@ -44,7 +44,7 @@ export async function analyzeListingImages(matchId: string): Promise<ImageAnalys
     imageUrl: match.image_url,
     features: {
       hasFurniture: match.title.includes("附傢俱") || Math.random() > 0.5,
-      hasAC: true,
+      hasAc: true,
       hasWasher: Math.random() > 0.3,
       hasKitchen: match.title.includes("廚房") || Math.random() > 0.4,
       hasBalcony: Math.random() > 0.5,
@@ -70,7 +70,7 @@ export async function analyzeListingImages(matchId: string): Promise<ImageAnalys
     SET has_ac = ?, has_furniture = ?, image_quality_score = ?
     WHERE id = ?
   `).run(
-    analysis.features.hasAC ? 1 : 0,
+    analysis.features.hasAc ? 1 : 0,
     analysis.features.hasFurniture ? 1 : 0,
     analysis.quality.score,
     matchId
