@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    marketReport.scheduleWeeklyReports();
+    await marketReport.scheduleWeeklyReports();
 
     return NextResponse.json({
       success: true,

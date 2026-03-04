@@ -34,6 +34,8 @@ import type { Match } from "@/types";
 import { Header } from "@/components/Header";
 import { Card } from "@/components/Card";
 import { FadeIn, SlideIn } from "@/components/AnimatedContainer";
+import { PriceHistory } from "@/components/PriceHistory";
+import { InvestmentCalculator } from "@/components/InvestmentCalculator";
 
 type MatchDetail = Match & { alertName?: string; alertType?: string };
 
@@ -98,7 +100,7 @@ interface PricePoint {
   scrapedAt: string;
 }
 
-function PriceHistoryChart({ matchId, currency }: { matchId: string; currency: string }) {
+function PriceHistorySection({ matchId, currentPrice, createdAt }: { matchId: string; currentPrice: number; createdAt: string }) {
   const [history, setHistory] = useState<PricePoint[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -116,138 +118,25 @@ function PriceHistoryChart({ matchId, currency }: { matchId: string; currency: s
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-24">
+      <div className="flex items-center justify-center h-48">
         <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
       </div>
     );
   }
 
-  if (history.length === 0) {
-    return (
-      <p className="text-slate-500 text-sm">
-        No price history yet. History builds up as the alert re-checks this listing.
-      </p>
-    );
-  }
-
-  if (history.length === 1) {
-    return (
-      <p className="text-slate-400 text-sm">
-        Tracking started.{" "}
-        <span className="text-amber-400 font-semibold">
-          {formatPrice(history[0].price, history[0].currency)}
-        </span>{" "}
-        — price history will appear after the next check.
-      </p>
-    );
-  }
-
-  const prices = history.map((h) => h.price);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
-  const firstPrice = prices[0];
-  const lastPrice = prices[prices.length - 1];
-  const delta = lastPrice - firstPrice;
-  const deltaPct = Math.round((delta / firstPrice) * 100);
-
-  // SVG dimensions
-  const W = 300;
-  const H = 120;
-  const PAD = { top: 10, bottom: 20, left: 8, right: 8 };
-  const chartW = W - PAD.left - PAD.right;
-  const chartH = H - PAD.top - PAD.bottom;
-
-  const priceRange = maxPrice - minPrice || 1;
-
-  const toX = (i: number) => PAD.left + (i / (history.length - 1)) * chartW;
-  const toY = (price: number) =>
-    PAD.top + chartH - ((price - minPrice) / priceRange) * chartH;
-
-  const points = history.map((h, i) => `${toX(i)},${toY(h.price)}`).join(" ");
-  const areaPoints = [
-    `${toX(0)},${PAD.top + chartH}`,
-    ...history.map((h, i) => `${toX(i)},${toY(h.price)}`),
-    `${toX(history.length - 1)},${PAD.top + chartH}`,
-  ].join(" ");
+  const formattedHistory = history.length > 0 ? history.map(h => ({
+    date: new Date(h.scrapedAt).toLocaleDateString(),
+    price: h.price
+  })) : [
+    { date: new Date(createdAt).toLocaleDateString(), price: currentPrice }
+  ];
 
   return (
-    <div className="space-y-3">
-      {/* Trend badge */}
-      <div className="flex items-center gap-2">
-        {delta < 0 ? (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-semibold">
-            <TrendingDown className="h-4 w-4" />
-            −{Math.abs(deltaPct)}% since first seen
-          </span>
-        ) : delta > 0 ? (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm font-semibold">
-            <TrendingUp className="h-4 w-4" />
-            +{deltaPct}% since first seen
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-500/10 border border-slate-500/20 text-slate-400 text-sm font-semibold">
-            <Minus className="h-4 w-4" />
-            Stable
-          </span>
-        )}
-      </div>
-
-      {/* SVG chart */}
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="w-full"
-        style={{ height: "120px" }}
-        aria-label="Price history chart"
-      >
-        {/* Area fill */}
-        <defs>
-          <linearGradient id="priceGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.02" />
-          </linearGradient>
-        </defs>
-        <polygon points={areaPoints} fill="url(#priceGrad)" />
-        {/* Line */}
-        <polyline
-          points={points}
-          fill="none"
-          stroke="#f59e0b"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-        {/* Dots */}
-        {history.map((h, i) => {
-          const isMin = h.price === minPrice;
-          return (
-            <circle
-              key={i}
-              cx={toX(i)}
-              cy={toY(h.price)}
-              r={isMin ? 4 : 3}
-              fill={isMin ? "#10b981" : "#f59e0b"}
-              stroke="#0a0f1a"
-              strokeWidth="1.5"
-            />
-          );
-        })}
-      </svg>
-
-      {/* Min / Max legend */}
-      <div className="flex justify-between text-xs text-slate-500">
-        <span>
-          Lowest:{" "}
-          <span className="text-emerald-400 font-semibold">
-            {formatPrice(minPrice, currency)}
-          </span>
-        </span>
-        <span>
-          Highest:{" "}
-          <span className="text-rose-400 font-semibold">
-            {formatPrice(maxPrice, currency)}
-          </span>
-        </span>
-      </div>
-    </div>
+    <PriceHistory 
+      history={formattedHistory} 
+      currentPrice={currentPrice} 
+      firstSeen={createdAt} 
+    />
   );
 }
 
@@ -400,6 +289,10 @@ export default function MatchDetailPage() {
     match.area && {
       icon: Square,
       label: areaText || `${match.area}坪`,
+    },
+    match.commuteTime && {
+      icon: Clock,
+      label: `${match.commuteTime} min commute`,
     },
     layoutStr && { icon: Home, label: layoutStr },
     kindName && { icon: Building2, label: kindName },
@@ -967,14 +860,19 @@ export default function MatchDetailPage() {
 
               {/* Price History Chart */}
               <FadeIn delay={0.28}>
-                <Card className="p-6 bg-white/5 border-white/10">
-                  <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <TrendingDown className="h-4 w-4 text-amber-500" />
-                    Price History
-                  </h2>
-                  <PriceHistoryChart matchId={match.id} currency={match.currency} />
-                </Card>
+                <PriceHistorySection 
+                  matchId={match.id} 
+                  currentPrice={match.price} 
+                  createdAt={match.createdAt as unknown as string} 
+                />
               </FadeIn>
+
+              {/* Investment Calculator */}
+              {isProperty && (
+                <FadeIn delay={0.29}>
+                  <InvestmentCalculator initialPrice={match.price} matchId={match.id} />
+                </FadeIn>
+              )}
 
               {/* Alert Info */}
               {match.alertName && (

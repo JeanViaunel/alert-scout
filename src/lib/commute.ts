@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { getDb } from "./db";
 
 export interface CommuteDestination {
@@ -40,13 +41,44 @@ export async function getCommuteTime(
     };
   }
 
-  // 2. Not in cache, would call Google Maps API here
-  // For now, simulate a result based on straight-line distance if possible
   const match = db.prepare('SELECT latitude, longitude FROM matches WHERE id = ?').get(matchId) as any;
   const dest = db.prepare('SELECT latitude, longitude FROM commute_destinations WHERE id = ?').get(destinationId) as any;
 
-  if (match?.latitude && dest?.latitude) {
-    // Simple estimation: 1.5 min per km + base time
+  if (match?.latitude && match?.longitude && dest?.latitude && dest?.longitude) {
+    try {
+      // OSRM API: https://router.project-osrm.org/route/v1/driving/{lon1},{lat1};{lon2},{lat2}?overview=false
+      const url = `https://router.project-osrm.org/route/v1/driving/${match.longitude},${match.latitude};${dest.longitude},${dest.latitude}?overview=false`;
+
+      const response = await axios.get(url);
+      const data = response.data;
+
+      if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const durationMinutes = Math.round(route.duration / 60);
+        const distanceKm = parseFloat((route.distance / 1000).toFixed(2));
+        const mode = 'driving';
+
+        const result = {
+          matchId,
+          destinationId,
+          durationMinutes,
+          distanceKm,
+          mode
+        };
+
+        // Cache it
+        db.prepare(`
+          INSERT OR REPLACE INTO match_commute (match_id, destination_id, duration_minutes, distance_km, mode)
+          VALUES (?, ?, ?, ?, ?)
+        `).run(matchId, destinationId, durationMinutes, distanceKm, mode);
+
+        return result;
+      }
+    } catch (error) {
+      console.error('Error fetching commute time from OSRM:', error);
+    }
+
+    // Fallback to simple estimation if API fails
     const dist = calculateDistance(match.latitude, match.longitude, dest.latitude, dest.longitude);
     const duration = Math.round(dist * 3 + 10); // Simulated transit time
     
@@ -55,14 +87,14 @@ export async function getCommuteTime(
       destinationId,
       durationMinutes: duration,
       distanceKm: parseFloat(dist.toFixed(2)),
-      mode: 'transit'
+      mode: 'estimated'
     };
 
     // Cache it
     db.prepare(`
-      INSERT INTO match_commute (match_id, destination_id, duration_minutes, mode)
-      VALUES (?, ?, ?, ?)
-    `).run(matchId, destinationId, duration, 'transit');
+      INSERT OR REPLACE INTO match_commute (match_id, destination_id, duration_minutes, distance_km, mode)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(matchId, destinationId, duration, result.distanceKm, 'estimated');
 
     return result;
   }

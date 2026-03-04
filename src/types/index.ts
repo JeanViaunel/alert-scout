@@ -89,6 +89,7 @@ export interface Match {
   // v2 Fields
   isPriceDropped?: boolean;
   oldPrice?: number;
+  priceHistory?: { date: string; price: number }[];
   roi?: number;
   capRate?: number;
   commuteTime?: number;

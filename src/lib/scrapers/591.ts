@@ -507,3 +507,45 @@ export function filterListings(
     return true;
   });
 }
+
+export async function scrape591Listing(url: string): Promise<ScrapedListing | null> {
+  if (!url?.startsWith('http')) return null;
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
+        Referer: 'https://rent.591.com.tw/',
+      },
+      timeout: 25000,
+    });
+
+    const nuxt = parseNuxtPayloadFromHtml(response.data);
+    const store = (nuxt?.pinia as any)?.['rent-detail-info'] as any;
+    const detailCtx = store?.ctx as Record<string, unknown> | undefined;
+    
+    if (!detailCtx) return null;
+    
+    const priceStr = String(detailCtx.price || '');
+    const price = parseInt(priceStr.replace(/[^\d]/g, ''), 10) || 0;
+    const title = String(detailCtx.title || '');
+    
+    const listing: ScrapedListing = {
+      id: url,
+      title: title,
+      price: price,
+      priceText: priceStr,
+      location: String(detailCtx.address || ''),
+      sourceUrl: url,
+      source: '591',
+      metadata: {},
+    };
+    
+    return await enrich591ListingWithDetail(listing);
+  } catch (err) {
+    console.error(`Failed to scrape 591 listing at ${url}:`, err);
+    return null;
+  }
+}
+

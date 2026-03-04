@@ -148,6 +148,7 @@ export function runMigrations() {
       match_id TEXT REFERENCES matches(id) ON DELETE CASCADE,
       destination_id TEXT REFERENCES commute_destinations(id) ON DELETE CASCADE,
       duration_minutes INTEGER NOT NULL,
+      distance_km REAL DEFAULT 0,
       mode TEXT NOT NULL,
       calculated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (match_id, destination_id)
