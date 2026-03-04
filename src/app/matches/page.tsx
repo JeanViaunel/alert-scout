@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { getAuthToken } from "@/lib/auth-token";
 import {
@@ -37,6 +38,8 @@ const ListingsMap = dynamic(() => import("@/components/ListingsMap"), {
 const PROPERTY_SOURCES = ["591"];
 
 export default function MatchesPage() {
+  const router = useRouter();
+
   const [matches, setMatches] = useState<MatchWithAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "favorites">("all");
@@ -101,6 +104,11 @@ export default function MatchesPage() {
   const hasPropertyMatches = propertyMatches.length > 0;
 
   const isMapView = viewMode === "map" && hasPropertyMatches;
+
+  const handleMatchClick = (id: string) => {
+    setSelectedMatchId(id);
+    router.push(`/matches/${id}`);
+  };
 
   // When entering map view, auto-select the first property match (if any)
   useEffect(() => {
@@ -318,14 +326,20 @@ export default function MatchesPage() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             staggerDelay={0.08}
           >
-            {filteredMatches.map((match) => (
-              <StaggerItem key={match.id}>
-                <Card
-                  as="a"
-                  href={`/matches/${match.id}`}
-                  className="group overflow-hidden bg-white/5 border border-white/10 hover:border-amber-500/30"
-                  glow
-                >
+            {filteredMatches.map((match) => {
+              const isSelected = selectedMatchId === match.id;
+              return (
+                <StaggerItem key={match.id}>
+                  <Card
+                    as="button"
+                    onClick={() => handleMatchClick(match.id)}
+                    className={`group overflow-hidden bg-white/5 border ${
+                      isSelected
+                        ? "border-amber-500/60 ring-2 ring-amber-500/40"
+                        : "border-white/10 hover:border-amber-500/30"
+                    }`}
+                    glow
+                  >
                   {/* Image */}
                   <div className="relative h-52 bg-white/5 overflow-hidden">
                     {match.imageUrl ? (
@@ -444,7 +458,8 @@ export default function MatchesPage() {
                   </div>
                 </Card>
               </StaggerItem>
-            ))}
+              );
+            })}
           </StaggerContainer>
         </main>
       )}

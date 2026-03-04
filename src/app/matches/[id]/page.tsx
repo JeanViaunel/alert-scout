@@ -317,43 +317,6 @@ export default function MatchDetailPage() {
       });
   }, [match]);
 
-  // On-demand geocoding for property matches that don't yet have coordinates.
-  useEffect(() => {
-    if (!match) return;
-    if (match.alertType !== "property") return;
-    if (match.latitude != null && match.longitude != null) return;
-
-    const token = getAuthToken();
-    if (!token) return;
-
-    // Fire-and-forget: try to geocode from approximate address (位置/地址).
-    fetch(`/api/matches/${match.id}/geocode`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((data) => {
-        if (
-          data &&
-          typeof data.latitude === "number" &&
-          typeof data.longitude === "number"
-        ) {
-          setMatch((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  latitude: data.latitude,
-                  longitude: data.longitude,
-                }
-              : prev
-          );
-        }
-      })
-      .catch(() => {
-        // Silent — map is a nice-to-have.
-      });
-  }, [match]);
-
   const toggleFavorite = () => {
     setIsFavorite((prev) => !prev);
   };
@@ -394,8 +357,7 @@ export default function MatchDetailPage() {
 
   const sourceMeta = SOURCE_META[match.source] ?? SOURCE_META.custom;
   const SourceIcon = sourceMeta.icon;
-  const isProperty =
-    match.alertType === "property" || PROPERTY_SOURCES.includes(match.source);
+  const isProperty = PROPERTY_SOURCES.includes(match.source);
   const hasCoords = match.latitude != null && match.longitude != null;
 
   const metadata = match.metadata || {};
@@ -919,7 +881,7 @@ export default function MatchDetailPage() {
                   <div>
                     <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-amber-500" />
-                      地址 (概略)
+                      Location
                     </h2>
                     <Card className="overflow-hidden bg-white/5 border-white/10 p-0">
                       <ListingsMap
