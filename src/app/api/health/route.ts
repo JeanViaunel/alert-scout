@@ -30,7 +30,7 @@ export async function GET() {
       },
     });
     
-  } catch (error: {
+  } catch (error) {
     console.error("Health check failed:", error);
     return Response.json(
       { status: "error", message: "System initialization failed" },

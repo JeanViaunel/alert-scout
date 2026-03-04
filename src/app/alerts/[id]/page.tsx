@@ -34,41 +34,18 @@ import { Header } from "@/components/Header";
 import { Card } from "@/components/Card";
 import { PageHeader } from "@/components/PageHeader";
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/AnimatedContainer";
+import type { Match, Alert } from "@/types";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-interface AlertDetail {
-  id: string;
-  name: string;
-  type: "property" | "product";
-  sources: string[];
-  criteria: Record<string, unknown>;
-  isActive: boolean;
-  checkFrequency: string;
-  lastChecked?: string;
-  lastMatchCount: number;
+interface AlertDetail extends Omit<Alert, 'createdAt' | 'lastChecked' | 'criteria'> {
+  criteria: any;
   createdAt: string;
-  notifyMethods: string[];
+  lastChecked?: string;
 }
 
-interface Match {
-  id: string;
-  alertId: string;
-  title: string;
-  price: number;
-  currency: string;
-  location?: string;
-  area?: number;
-  imageUrl?: string;
-  sourceUrl: string;
-  source: string;
-  isFavorite: boolean;
-  createdAt: string;
-  latitude?: number;
-  longitude?: number;
-}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -173,7 +150,7 @@ function CriteriaTag({ label, value }: { label: string; value: string }) {
 }
 
 function buildCriteriaTags(
-  criteria: Record<string, unknown>,
+  criteria: any,
   platform: string
 ): Array<{ label: string; value: string }> {
   const tags: Array<{ label: string; value: string }> = [];

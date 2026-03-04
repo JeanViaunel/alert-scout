@@ -3,7 +3,6 @@
 
 import cron from 'node-cron';
 import { getMatchesByUser } from '@/lib/matches';
-import { sendNotification } from '@/lib/notifications';
 
 // Your user email (will be retrieved from auth)
 const YOUR_USER_EMAIL = "ppython2020@proton.me";
@@ -118,7 +117,7 @@ export function scheduleDailyMessages() {
 // Export for use in API route
 export const scheduledMessages = {
   isRunning: false,
-  stop: null as () => void | null,
+  stop: null as (() => void) | null,
 };
 
 // Start scheduler when app initializes

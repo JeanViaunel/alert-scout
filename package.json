@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@sentry/nextjs": "^10.39.0",
+    "@types/maplibre-gl": "^1.13.2",
     "axios": "^1.13.5",
     "babel-plugin-react-compiler": "^1.0.0",
     "bcrypt": "^6.0.0",
@@ -25,6 +26,7 @@
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
     "lucide-react": "^0.574.0",
+    "maplibre-gl": "^5.19.0",
     "next": "16.1.6",
     "node-cron": "^3.0.3",
     "playwright": "^1.58.2",

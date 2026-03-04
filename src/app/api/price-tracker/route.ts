@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { priceTracker } from '@/lib/price-tracker';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { getUserIdFromRequest } from '@/lib/auth-token-server';
 
 export async function GET(request: NextRequest) {
   try {

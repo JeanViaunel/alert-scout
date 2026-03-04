@@ -27,13 +27,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: process.env.CI ? false : false,
   },
-  
-  /**
-   * ESLint error handling during build
-   */
-  eslint: {
-    ignoreDuringBuilds: process.env.CI ? false : false,
-  },
 
   // === IMAGE OPTIMIZATION ===
   
@@ -186,7 +179,7 @@ const nextConfig: NextConfig = {
         : [
             {
               source: '/:path*',
-              has: [{ type: 'host', value: 'www.:domain' }],
+              has: [{ type: 'host' as const, value: 'www.:domain' }],
               destination: 'https://:domain/:path*',
               permanent: true,
             },
@@ -208,6 +201,7 @@ const nextConfig: NextConfig = {
 
   // === EXPERIMENTAL FEATURES ===
   
+  reactCompiler: true,
   experimental: {
     /**
      * Enable optimizePackageImports for specific heavy packages
@@ -226,12 +220,6 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
-    
-    /**
-     * React Compiler (React 19+)
-     * Auto-memoization for better performance
-     */
-    reactCompiler: true,
   },
 
   // === ENVIRONMENT VARIABLES ===
@@ -273,7 +261,9 @@ const nextConfig: NextConfig = {
    * The webpack config above handles better-sqlite3 edge runtime compatibility.
    * Turbopack handles native modules differently and doesn't need explicit configuration.
    */
-  turbopack: {},
+  turbopack: {
+    root: '.',
+  },
 
   // === POWERED BY HEADER ===
   

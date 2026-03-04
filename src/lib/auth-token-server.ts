@@ -29,3 +29,27 @@ export function getUserFromToken(request: NextRequest): User | null {
     return null;
   }
 }
+
+/**
+ * Server-side: Extract and verify token from NextRequest, then return the userId.
+ * Checks both cookie and Authorization header.
+ * Returns null if token is missing or invalid.
+ */
+export async function getUserIdFromRequest(request: NextRequest): Promise<string | null> {
+  // Get token from cookie or Authorization header
+  const cookie = request.cookies.get('auth-token')?.value;
+  const authHeader = request.headers.get('authorization');
+  const token = cookie || (authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null);
+  
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const payload = verifyToken(token);
+    return payload.userId;
+  } catch (error) {
+    // Token is invalid or expired
+    return null;
+  }
+}

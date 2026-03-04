@@ -88,7 +88,7 @@ export function getUserById(id: string): User | null {
 
 export interface UpdateUserInput {
   name?: string;
-  phone?: string;
+  phone?: string | null;
   password?: string;
 }
 

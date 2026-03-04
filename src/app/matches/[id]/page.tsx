@@ -26,6 +26,7 @@ import {
   TrendingDown,
   TrendingUp,
   Minus,
+  Navigation,
 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -41,6 +42,10 @@ import { ComparisonCard } from "@/components/ComparisonCard";
 type MatchDetail = Match & { alertName?: string; alertType?: string };
 
 const ListingsMap = dynamic(() => import("@/components/ListingsMap"), {
+  ssr: false,
+});
+
+const ListingsMap3D = dynamic(() => import("@/components/ListingsMap3D"), {
   ssr: false,
 });
 
@@ -150,6 +155,7 @@ export default function MatchDetailPage() {
   const [error, setError] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [show3D, setShow3D] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -773,17 +779,34 @@ export default function MatchDetailPage() {
               {isProperty && hasCoords && (
                 <FadeIn delay={0.25}>
                   <div>
-                    <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-amber-500" />
-                      Location
-                    </h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-amber-500" />
+                        Location
+                      </h2>
+                      <button
+                        onClick={() => setShow3D(!show3D)}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-bold text-amber-500 hover:bg-amber-500/10 transition-all shadow-sm"
+                      >
+                        <Navigation className={`h-3.5 w-3.5 ${show3D ? 'rotate-45' : ''} transition-transform`} />
+                        Switch to {show3D ? "2D" : "3D"} View
+                      </button>
+                    </div>
                     <Card className="overflow-hidden bg-white/5 border-white/10 p-0">
-                      <ListingsMap
-                        matches={[match] as Match[]}
-                        selectedMatchId={match.id}
-                        onSelectMatch={() => {}}
-                        className="h-80 rounded-xl overflow-hidden"
-                      />
+                      {show3D ? (
+                        <ListingsMap3D
+                          matches={[match] as Match[]}
+                          selectedMatchId={match.id}
+                          className="h-80 rounded-xl overflow-hidden"
+                        />
+                      ) : (
+                        <ListingsMap
+                          matches={[match] as Match[]}
+                          selectedMatchId={match.id}
+                          onSelectMatch={() => {}}
+                          className="h-80 rounded-xl overflow-hidden"
+                        />
+                      )}
                     </Card>
                   </div>
                 </FadeIn>

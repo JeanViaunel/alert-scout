@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { investmentCalculator, InvestmentParams } from '@/lib/investment-calculator';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { getUserIdFromRequest } from '@/lib/auth-token-server';
 
 export async function POST(request: NextRequest) {
   try {

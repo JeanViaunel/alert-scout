@@ -20,6 +20,7 @@ import {
   Car,
   BadgePercent,
   Check,
+  Navigation,
 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -35,6 +36,10 @@ const ListingsMap = dynamic(() => import("@/components/ListingsMap"), {
   ssr: false,
 });
 
+const ListingsMap3D = dynamic(() => import("@/components/ListingsMap3D"), {
+  ssr: false,
+});
+
 const PROPERTY_SOURCES = ["591"];
 
 export default function MatchesPage() {
@@ -45,6 +50,7 @@ export default function MatchesPage() {
   const [filter, setFilter] = useState<"all" | "favorites">("all");
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
+  const [is3D, setIs3D] = useState(false);
 
   useEffect(() => {
     fetchMatches();
@@ -248,9 +254,16 @@ export default function MatchesPage() {
             <StaggerContainer className="divide-y divide-white/5">
               {propertyMatches.map((match) => (
                 <StaggerItem key={match.id}>
-                  <motion.button
-                    type="button"
+                  <motion.div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setSelectedMatchId(match.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedMatchId(match.id);
+                      }
+                    }}
                     className={`flex w-full text-left gap-4 p-4 transition-all duration-300 cursor-pointer ${
                       selectedMatchId === match.id
                         ? "bg-amber-500/10 border-l-4 border-l-amber-500"
@@ -303,20 +316,37 @@ export default function MatchesPage() {
                         </button>
                       </div>
                     </div>
-                  </motion.button>
+                  </motion.div>
                 </StaggerItem>
               ))}
             </StaggerContainer>
           </div>
 
           {/* Map */}
-          <div className="flex-1 overflow-hidden bg-[#0a0f1a]">
-            <ListingsMap
-              matches={propertyMatches as Match[]}
-              selectedMatchId={selectedMatchId}
-              onSelectMatch={setSelectedMatchId}
-              className="h-full rounded-none border-0"
-            />
+          <div className="flex-1 overflow-hidden bg-[#0a0f1a] relative">
+            <div className="absolute top-4 right-4 z-20">
+              <button
+                onClick={() => setIs3D(!is3D)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900/90 backdrop-blur-md border border-white/10 text-xs font-bold text-amber-500 hover:bg-amber-500/10 transition-all shadow-2xl"
+              >
+                <Navigation className={`h-4 w-4 ${is3D ? 'rotate-45' : ''} transition-transform`} />
+                {is3D ? "Switch to 2D" : "Switch to 3D"}
+              </button>
+            </div>
+            {is3D ? (
+              <ListingsMap3D
+                matches={propertyMatches as Match[]}
+                selectedMatchId={selectedMatchId}
+                className="h-full rounded-none border-0"
+              />
+            ) : (
+              <ListingsMap
+                matches={propertyMatches as Match[]}
+                selectedMatchId={selectedMatchId}
+                onSelectMatch={setSelectedMatchId}
+                className="h-full rounded-none border-0"
+              />
+            )}
           </div>
         </div>
       ) : (
@@ -339,6 +369,7 @@ export default function MatchesPage() {
                     }`}
                     glow
                   >
+
                   {/* Image */}
                   <div className="relative h-52 bg-white/5 overflow-hidden">
                     {match.imageUrl ? (
