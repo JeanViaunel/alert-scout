@@ -487,6 +487,11 @@ function Dashboard({ user }: { user: { name: string } }) {
           </StaggerItem>
         </StaggerContainer>
 
+        {/* Recommendations Section */}
+        <FadeIn delay={0.4}>
+          <Recommendations />
+        </FadeIn>
+
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {quickActions.map((action, i) => {

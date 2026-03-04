@@ -331,7 +331,6 @@ export default function MatchesPage() {
               return (
                 <StaggerItem key={match.id}>
                   <Card
-                    as="button"
                     onClick={() => handleMatchClick(match.id)}
                     className={`group overflow-hidden bg-white/5 border ${
                       isSelected

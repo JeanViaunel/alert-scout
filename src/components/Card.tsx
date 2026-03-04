@@ -71,7 +71,7 @@ export function Card({
             onClick?.();
           }
         }}
-        className={`group w-full text-left ${baseClasses}`}
+        className={cn("group w-full text-left cursor-pointer pointer-events-auto", baseClasses)}
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.99 }}
       >
