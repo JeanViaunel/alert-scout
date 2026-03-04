@@ -153,6 +153,13 @@ const DISTRICTS: Record<string, Array<{ value: string; label: string }>> = {
     { value: 'north', label: '北區' },
     { value: 'xiangshan', label: '香山區' },
   ],
+  'hsinchu-county': [
+    { value: 'zhubei', label: '竹北市' },
+    { value: 'hukou', label: '湖口鄉' },
+    { value: 'xinfeng', label: '新豐鄉' },
+    { value: 'baoshan', label: '寶山鄉' },
+    { value: 'zhudong', label: '竹東鎮' },
+  ],
 };
 
 const FREQUENCIES = [

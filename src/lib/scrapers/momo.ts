@@ -89,6 +89,93 @@ export async function scrapeMomo(criteria: EcommerceCriteria): Promise<ScrapedPr
     }
   });
 
+  // Fallback: some Momo pages embed products only in JSON-LD and render the
+  // list client-side. Parse any Product entries from <script type="application/ld+json">
+  if (products.length === 0) {
+    $('script[type="application/ld+json"]').each((_, el) => {
+      try {
+        const raw = $(el).contents().text().trim();
+        if (!raw) return;
+
+        const json = JSON.parse(raw);
+        const nodes: any[] = Array.isArray(json) ? json : [json];
+
+        for (const node of nodes) {
+          // Direct Product
+          if (node['@type'] === 'Product') {
+            const name = node.name || '';
+            const offers = node.offers || {};
+            const priceVal = offers.price || offers.lowPrice || offers.highPrice;
+            const urlVal = offers.url || node.url || url;
+            const imageVal = Array.isArray(node.image) ? node.image[0] : node.image;
+
+            const price = typeof priceVal === 'string' || typeof priceVal === 'number'
+              ? parseInt(String(priceVal).replace(/[^\d]/g, '')) || 0
+              : 0;
+
+            if (name && price > 0) {
+              const id =
+                node.sku ||
+                node.productID ||
+                (typeof node['@id'] === 'string' ? node['@id'] : undefined) ||
+                Math.random().toString(36).slice(2);
+
+              products.push({
+                id: `momo-${id}`,
+                title: String(name),
+                price,
+                priceText: `NT$${price.toLocaleString()}`,
+                imageUrl: typeof imageVal === 'string' ? imageVal : undefined,
+                sourceUrl: typeof urlVal === 'string' ? urlVal : url,
+                source: 'momo',
+                metadata: { scrapedAt: new Date().toISOString(), searchUrl: url, source: 'jsonld' },
+              });
+            }
+          }
+
+          // ItemList with Product elements
+          if (node['@type'] === 'ItemList' && Array.isArray(node.itemListElement)) {
+            for (const item of node.itemListElement) {
+              const prod = item.item || item;
+              if (!prod || prod['@type'] !== 'Product') continue;
+
+              const name = prod.name || '';
+              const offers = prod.offers || {};
+              const priceVal = offers.price || offers.lowPrice || offers.highPrice;
+              const urlVal = offers.url || prod.url || url;
+              const imageVal = Array.isArray(prod.image) ? prod.image[0] : prod.image;
+
+              const price = typeof priceVal === 'string' || typeof priceVal === 'number'
+                ? parseInt(String(priceVal).replace(/[^\d]/g, '')) || 0
+                : 0;
+
+              if (name && price > 0) {
+                const id =
+                  prod.sku ||
+                  prod.productID ||
+                  (typeof prod['@id'] === 'string' ? prod['@id'] : undefined) ||
+                  Math.random().toString(36).slice(2);
+
+                products.push({
+                  id: `momo-${id}`,
+                  title: String(name),
+                  price,
+                  priceText: `NT$${price.toLocaleString()}`,
+                  imageUrl: typeof imageVal === 'string' ? imageVal : undefined,
+                  sourceUrl: typeof urlVal === 'string' ? urlVal : url,
+                  source: 'momo',
+                  metadata: { scrapedAt: new Date().toISOString(), searchUrl: url, source: 'jsonld' },
+                });
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error parsing Momo JSON-LD:', err);
+      }
+    });
+  }
+
   // Apply price filter (API-side filter may already do this, belt-and-suspenders)
   return products.filter(p => {
     if (criteria.minPrice !== undefined && p.price < criteria.minPrice) return false;

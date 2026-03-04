@@ -106,9 +106,16 @@ const REGION_CODES: Record<string, number> = {
 // District codes for major cities
 const DISTRICT_CODES: Record<string, Record<string, number>> = {
   'hsinchu': {
-    'east': 400,
-    'north': 401,
-    'xiangshan': 402,
+    'east': 371,
+    'north': 372,
+    'xiangshan': 370,
+  },
+  'hsinchu-county': {
+    'zhubei': 54,
+    'zhudong': 61,
+    'xinfeng': 56,
+    'hukou': 55,
+    'baoshan': 60,
   },
 };
 

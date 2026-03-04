@@ -1,6 +1,14 @@
 import axios from 'axios';
+import { getDb } from './db';
 
 export const runtime = 'nodejs';
+
+/**
+ * Simple in-memory cache for geocoding results
+ * Key: normalized address, Value: { lat, lng, timestamp }
+ */
+const geocodeCache = new Map<string, { latitude: number; longitude: number; timestamp: number }>();
+const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 /**
  * Geocode a Taiwan address to latitude/longitude using Nominatim (OpenStreetMap).
@@ -69,4 +77,106 @@ export async function geocodeAddressWithRateLimit(address: string): Promise<{ la
   
   lastGeocodeTime = Date.now();
   return geocodeAddress(address);
+}
+
+/**
+ * Geocode with cache (memory + database)
+ */
+export async function geocodeAddressCached(address: string): Promise<{ latitude: number; longitude: number; accuracy: string } | null> {
+  const normalizedAddress = address.trim().toLowerCase();
+  
+  // Check memory cache
+  const cached = geocodeCache.get(normalizedAddress);
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+    return { latitude: cached.latitude, longitude: cached.longitude, accuracy: 'cache' };
+  }
+  
+  // Check database cache
+  const db = getDb();
+  const dbResult = db.prepare(`
+    SELECT latitude, longitude, geocode_accuracy
+    FROM matches
+    WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+    AND location = ?
+    LIMIT 1
+  `).get(address) as { latitude: number; longitude: number; geocode_accuracy: string } | undefined;
+  
+  if (dbResult) {
+    geocodeCache.set(normalizedAddress, {
+      latitude: dbResult.latitude,
+      longitude: dbResult.longitude,
+      timestamp: Date.now(),
+    });
+    return { ...dbResult, accuracy: dbResult.geocode_accuracy || 'database' };
+  }
+  
+  // Geocode fresh
+  const result = await geocodeAddressWithRateLimit(address);
+  if (result) {
+    geocodeCache.set(normalizedAddress, {
+      ...result,
+      timestamp: Date.now(),
+    });
+    return { ...result, accuracy: 'fresh' };
+  }
+  
+  return null;
+}
+
+/**
+ * Batch geocode multiple addresses
+ * Processes with rate limiting and returns results in same order
+ */
+export async function batchGeocodeAddresses(addresses: string[]): Promise<Array<{ address: string; latitude: number | null; longitude: number | null }>> {
+  const results: Array<{ address: string; latitude: number | null; longitude: number | null }> = [];
+  
+  for (const address of addresses) {
+    try {
+      const result = await geocodeAddressWithRateLimit(address);
+      results.push({
+        address,
+        latitude: result?.latitude || null,
+        longitude: result?.longitude || null,
+      });
+    } catch (error) {
+      console.error(`Batch geocode failed for ${address}:`, error);
+      results.push({ address, latitude: null, longitude: null });
+    }
+  }
+  
+  return results;
+}
+
+/**
+ * Geocode all un-geocoded matches (batch operation)
+ */
+export async function geocodeUngeocodedMatches(limit = 100): Promise<number> {
+  const db = getDb();
+  
+  const matches = db.prepare(`
+    SELECT id, location
+    FROM matches
+    WHERE latitude IS NULL OR longitude IS NULL
+    LIMIT ?
+  `).all(limit) as Array<{ id: string; location: string }>;
+  
+  let geocoded = 0;
+  
+  for (const match of matches) {
+    if (!match.location) continue;
+    
+    const result = await geocodeAddressWithRateLimit(match.location);
+    
+    if (result) {
+      db.prepare(`
+        UPDATE matches
+        SET latitude = ?, longitude = ?, geocode_accuracy = 'street'
+        WHERE id = ?
+      `).run(result.latitude, result.longitude, match.id);
+      geocoded++;
+    }
+  }
+  
+  console.log(`📍 Geocoded ${geocoded}/${matches.length} matches`);
+  return geocoded;
 }
