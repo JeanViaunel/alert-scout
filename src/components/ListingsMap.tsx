@@ -160,7 +160,7 @@ export default function ListingsMap({ matches, selectedMatchId, onSelectMatch, c
                     <div className="flex items-center justify-between mb-1 gap-4">
                       <h3 className="font-bold text-sm text-slate-900 leading-tight">{match.title}</h3>
                       {match.isPriceDropped && (
-                        <span className="bg-emerald-100 text-emerald-700 text-[9px] font-bold px-1.5 rounded uppercase">Drop</span>
+                        <span className="bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase shadow-sm">Price Dropped</span>
                       )}
                     </div>
                     {match.location && (

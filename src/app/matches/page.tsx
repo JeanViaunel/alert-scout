@@ -388,9 +388,9 @@ export default function MatchesPage() {
                         {match.title}
                       </h3>
                       {match.isPriceDropped && (
-                        <span className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+                        <span className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500 text-white text-[10px] font-bold shadow-lg shadow-emerald-500/20">
                           <TrendingDown className="h-3 w-3" />
-                          DROP
+                          Price Dropped
                         </span>
                       )}
                     </div>
@@ -422,17 +422,17 @@ export default function MatchesPage() {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="flex flex-wrap gap-3 mb-4">
                       {match.area && (
-                        <div className="flex items-center gap-1.5 text-sm text-slate-400">
+                        <div className="flex items-center gap-1.5 text-sm text-slate-400 bg-white/5 px-2 py-1 rounded-lg">
                           <Home className="h-4 w-4 text-amber-500/70" />
                           {match.area} ping
                         </div>
                       )}
                       {match.commuteTime && (
-                        <div className="flex items-center gap-1.5 text-sm text-slate-400">
-                          <Car className="h-4 w-4 text-amber-500/70" />
-                          {match.commuteTime} min
+                        <div className="flex items-center gap-1.5 text-sm text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-1 rounded-lg">
+                          <Car className="h-4 w-4" />
+                          Commute: {match.commuteTime} min
                         </div>
                       )}
                       {match.hasAc && (
