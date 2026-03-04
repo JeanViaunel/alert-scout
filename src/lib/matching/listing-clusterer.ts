@@ -156,6 +156,34 @@ function addToCluster(clusterId: string, member: Listing): void {
       VALUES (?, ?, ?, ?, ?)
     `).run(clusterId, member.id, member.source, member.sourceUrl, member.price);
   } catch (err) {
-    console.error('Error adding to cluster:', err);
+  console.error('Error adding to cluster:', err);
   }
-}
+  }
+
+  export function getComparisonsByMatchId(matchId: string): Listing[] {
+  const db = getDb();
+
+  // 1. Find the cluster this match belongs to
+  const clusterRow = db.prepare(`
+  SELECT cluster_id FROM cluster_members WHERE match_id = ?
+  `).get(matchId) as { cluster_id: string } | undefined;
+
+  if (!clusterRow) return [];
+
+  // 2. Get all members of that cluster except the current match
+  const members = db.prepare(`
+  SELECT * FROM cluster_members 
+  WHERE cluster_id = ? AND match_id != ?
+  `).all(clusterRow.cluster_id, matchId) as any[];
+
+  return members.map(m => ({
+  id: m.match_id,
+  address: '', // We don't store address in cluster_members yet, could be joined from matches
+  price: m.price,
+  ping: m.ping || 0,
+  floor: m.floor,
+  source: m.source,
+  sourceUrl: m.source_url
+  }));
+  }
+

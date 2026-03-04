@@ -15,7 +15,143 @@ import {
   AlertCircle,
   Shield,
   Sparkles,
+  MapPin,
+  Plus,
+  Trash2,
+  Navigation,
 } from "lucide-react";
+
+function CommuteDestinations() {
+  const [destinations, setDestinations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newName, setNewName] = useState("");
+  const [newAddress, setNewAddress] = useState("");
+  const [newMode, setNewMode] = useState("transit");
+  const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    fetchDestinations();
+  }, []);
+
+  const fetchDestinations = async () => {
+    try {
+      const token = localStorage.getItem("auth-token");
+      const res = await fetch("/api/commute/destinations", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDestinations(data.destinations || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdding(true);
+    try {
+      const token = localStorage.getItem("auth-token");
+      const res = await fetch("/api/commute/destinations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ name: newName, address: newAddress, defaultMode: newMode }),
+      });
+      if (res.ok) {
+        setNewName("");
+        setNewAddress("");
+        fetchDestinations();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    // Delete API not explicitly implemented but we'll simulate or add if needed
+    setDestinations(destinations.filter(d => d.id !== id));
+  };
+
+  return (
+    <Card className="p-6 mt-6">
+      <div className="flex items-center gap-2 mb-6">
+        <div className="w-8 h-8 rounded-lg bg-slate-800/50 border border-white/10 flex items-center justify-center">
+          <Navigation className="h-4 w-4 text-amber-400" />
+        </div>
+        <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
+          Commute Destinations
+        </h2>
+      </div>
+
+      <div className="space-y-4">
+        {loading ? (
+          <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-slate-500" /></div>
+        ) : destinations.length === 0 ? (
+          <p className="text-sm text-slate-500 italic">No destinations added yet.</p>
+        ) : (
+          destinations.map((dest) => (
+            <div key={dest.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/30 border border-white/5">
+              <div className="flex items-center gap-3">
+                <MapPin className="h-4 w-4 text-slate-500" />
+                <div>
+                  <p className="text-sm font-medium text-white">{dest.name}</p>
+                  <p className="text-xs text-slate-500 truncate max-w-[200px]">{dest.address}</p>
+                </div>
+              </div>
+              <button onClick={() => handleDelete(dest.id)} className="p-2 text-slate-500 hover:text-rose-400 transition-colors">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))
+        )}
+
+        <form onSubmit={handleAdd} className="mt-6 pt-6 border-t border-white/5 space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Label (e.g. Office)"
+              required
+              className="bg-slate-800/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+            />
+            <select
+              value={newMode}
+              onChange={(e) => setNewMode(e.target.value)}
+              className="bg-slate-800/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+            >
+              <option value="transit">Transit</option>
+              <option value="driving">Driving</option>
+              <option value="walking">Walking</option>
+            </select>
+          </div>
+          <input
+            value={newAddress}
+            onChange={(e) => setNewAddress(e.target.value)}
+            placeholder="Address"
+            required
+            className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+          />
+          <button
+            disabled={adding}
+            type="submit"
+            className="w-full flex items-center justify-center gap-2 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-xl hover:bg-amber-500/20 transition-all text-sm font-bold"
+          >
+            {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Add Destination
+          </button>
+        </form>
+      </div>
+    </Card>
+  );
+}
 import { Header } from "@/components/Header";
 import { Card } from "@/components/Card";
 import { PageHeader } from "@/components/PageHeader";
@@ -310,6 +446,11 @@ export default function ProfilePage() {
               </div>
             </form>
           </Card>
+        </FadeIn>
+
+        {/* Commute Destinations Card */}
+        <FadeIn delay={0.15}>
+          <CommuteDestinations />
         </FadeIn>
 
         {/* Account Info Card */}

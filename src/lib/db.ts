@@ -174,6 +174,30 @@ function initializeDatabase(database: Database.Database): void {
     )
   `);
 
+  // Cluster tables for Multi-Source Comparison
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS listing_clusters (
+      id TEXT PRIMARY KEY,
+      cluster_key TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS cluster_members (
+      cluster_id TEXT,
+      match_id TEXT,
+      source TEXT,
+      source_url TEXT,
+      price INTEGER,
+      ping REAL,
+      floor TEXT,
+      UNIQUE(cluster_id, match_id),
+      FOREIGN KEY (cluster_id) REFERENCES listing_clusters(id) ON DELETE CASCADE,
+      FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
+    )
+  `);
+
   // Create indexes
   database.exec(`CREATE INDEX IF NOT EXISTS idx_alerts_user_id ON alerts(user_id)`);
   database.exec(`CREATE INDEX IF NOT EXISTS idx_alerts_active ON alerts(is_active)`);

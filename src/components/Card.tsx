@@ -61,14 +61,22 @@ export function Card({
 
   if (as === "button" || onClick) {
     return (
-      <motion.button
+      <motion.div
+        role="button"
+        tabIndex={0}
         onClick={onClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick?.();
+          }
+        }}
         className={`group w-full text-left ${baseClasses}`}
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.99 }}
       >
         {content}
-      </motion.button>
+      </motion.div>
     );
   }
 

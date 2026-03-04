@@ -36,6 +36,7 @@ import { Card } from "@/components/Card";
 import { FadeIn, SlideIn } from "@/components/AnimatedContainer";
 import { PriceHistory } from "@/components/PriceHistory";
 import { InvestmentCalculator } from "@/components/InvestmentCalculator";
+import { ComparisonCard } from "@/components/ComparisonCard";
 
 type MatchDetail = Match & { alertName?: string; alertType?: string };
 
@@ -855,6 +856,17 @@ export default function MatchDetailPage() {
                       </div>
                     </div>
                   </Card>
+                </FadeIn>
+              )}
+
+              {/* Multi-Source Comparison */}
+              {isProperty && (
+                <FadeIn delay={0.27}>
+                  <ComparisonCard 
+                    matchId={match.id} 
+                    currentPrice={match.price} 
+                    currentSource={match.source} 
+                  />
                 </FadeIn>
               )}
 

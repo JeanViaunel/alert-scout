@@ -292,6 +292,106 @@ function LandingPage() {
 // DASHBOARD COMPONENTS
 // ============================================
 
+function Recommendations() {
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth-token");
+    if (!token) return;
+
+    fetch("/api/recommendations?limit=6", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data) => setRecommendations(data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="mb-12">
+        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-amber-500" />
+          ✨ Recommended For You
+        </h2>
+        <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="min-w-[280px] h-[340px] rounded-2xl bg-white/5 border border-white/10 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (recommendations.length === 0) return null;
+
+  return (
+    <div className="mb-12">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-amber-500" />
+          ✨ Recommended For You
+        </h2>
+        <Link href="/matches" className="text-sm text-amber-500 hover:text-amber-400 font-medium flex items-center gap-1 transition-colors">
+          View All <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+
+      <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide snap-x">
+        {recommendations.map((rec, i) => (
+          <motion.div
+            key={rec.match.id}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="min-w-[280px] snap-start"
+          >
+            <Link href={`/matches/${rec.match.id}`}>
+              <Card className="h-full overflow-hidden group" hover glow>
+                <div className="relative aspect-[4/3] overflow-hidden">
+                  <img 
+                    src={rec.match.imageUrl || "/file.svg"} 
+                    alt={rec.match.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-lg">
+                    {rec.match.source}
+                  </div>
+                  <div className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold">
+                    {Math.round(rec.score * 100)}% Match
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="text-white font-semibold line-clamp-1 mb-1 group-hover:text-amber-400 transition-colors">
+                    {rec.match.title}
+                  </h3>
+                  <p className="text-slate-400 text-xs flex items-center gap-1 mb-3">
+                    <MapPin className="h-3 w-3" /> {rec.match.location}
+                  </p>
+                  <div className="flex items-center justify-between mt-auto">
+                    <span className="text-amber-500 font-bold">
+                      {new Intl.NumberFormat("zh-TW", {
+                        style: "currency",
+                        currency: rec.match.currency || "TWD",
+                        maximumFractionDigits: 0,
+                      }).format(rec.match.price)}
+                    </span>
+                    <span className="text-slate-500 text-[10px] uppercase font-medium">
+                      {rec.match.area} ping
+                    </span>
+                  </div>
+                </div>
+              </Card>
+            </Link>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Dashboard({ user }: { user: { name: string } }) {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
